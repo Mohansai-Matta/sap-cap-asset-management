@@ -1,0 +1,29 @@
+{
+  "name": "miniproject",
+  "version": "1.0.0",
+  "description": "Welcome to your new CAP project.",
+  "license": "ISC",
+  "author": "",
+  "type": "commonjs",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "watch-employee": "cds watch --open employee/index.html?sap-ui-xx-viewCache=false --livereload false",
+    "watch-department": "cds watch --open department/index.html?sap-ui-xx-viewCache=false --livereload false",
+    "watch-manager": "cds watch --open manager/index.html?sap-ui-xx-vigit commit -m "Initial commit - SAP CAP Asset Management"ewCache=false --livereload false"
+  },
+  "dependencies": {
+    "@cap-js/hana": "^3.1.2",
+    "@sap/cds": "^10.2.1"
+  },
+  "devDependencies": {
+    "@sap/cds-dk": "^10.2.0",
+    "cds-plugin-ui5": "^0.17.0"
+  },
+  "overrides": {
+  "@sap/cds": "$@sap/cds"
+  },
+  "workspaces": [
+    "app/*"
+  ]
+}
