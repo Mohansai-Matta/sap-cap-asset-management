@@ -1,0 +1,80 @@
+Generate a complete Asset Management Application with three separate, fully functional dashboards: Admin Dashboard, Manager Dashboard, and Employee Dashboard. The application must have a modern, professional UI, with each dashboard containing its own modules, sidebar navigation, tables, buttons, forms, and operations. All three dashboards must be connected to the same database, with role-based access control.
+
+1. Admin Dashboard — Overall Application Management
+Create the Admin Dashboard as the main control center of the entire application. The Admin should be able to maintain and manage all modules, managers, employees, assets, ownership records, and maintenance records.
+
+Include the following modules on the Admin Dashboard:
+
+Dashboard Overview: Display total assets, total managers, total employees, assigned assets, available assets, pending requests, and maintenance records using summary cards and charts.
+Manager Management: Create, view, edit, activate/deactivate, and manage manager accounts. Display manager details, departments, assigned employees, and managed assets.
+Employee Management: View all employee records, create employee accounts, edit employee details, update departments and manager assignments, and manage employee status.
+Asset Management: Add, view, update, delete, search, and filter assets. Maintain asset ID, name, category, serial number, purchase date, cost, condition, location, and availability status.
+Asset Ownership Management: Create and maintain asset ownership records. Assign assets to employees or managers, change ownership, transfer assets, update ownership details, and view complete ownership history. Include buttons for View Ownership, Edit Ownership, Transfer Ownership, and Ownership History.
+Maintenance Management: Create, view, edit, and update maintenance records. Record asset ID, maintenance type, issue description, service provider, maintenance date, cost, next service date, and maintenance status. Include Add Maintenance Record, View Record, Edit Record, and Update Status buttons.
+Asset Requests: View all requests from employees and managers, approve or reject requests, and manage asset allocation and return requests.
+Reports and Analytics: Generate reports for asset inventory, ownership, employee-wise allocation, manager-wise allocation, maintenance expenses, and asset history.
+Notifications and Audit Logs: Track user activities, ownership changes, asset assignments, maintenance updates, and important notifications.
+Settings and Permissions: Manage departments, asset categories, user roles, permissions, and application settings.
+The Admin must have overall access to all application modules and records.
+
+2. Manager Dashboard — Employee, Ownership, and Maintenance Management
+Create a separate Manager Dashboard that allows managers to manage their team members and the assets under their responsibility.
+
+Include the following modules:
+
+Manager Overview: Display total employees, team assets, assigned assets, available assets, pending requests, and maintenance activities.
+Employee Records: Allow managers to view all employee records within their assigned team or department. Include employee ID, name, email, department, designation, assigned manager, and account status. Provide View, Edit, and Update buttons according to permissions.
+Employee Asset Details: Allow managers to view the assets assigned to each employee, including asset ID, asset name, serial number, assignment date, condition, and current ownership.
+Asset Ownership Management: Create an ownership table where managers can view and manage authorized asset ownership records. Include buttons such as View Ownership, Edit Ownership, Transfer Ownership, Update Owner, and View Ownership History. Allow managers to modify ownership table records when permitted, with every change saved to the database and recorded in the ownership history.
+Asset Allocation: Assign available assets to employees, reassign assets, update assignment details, and track asset transfers.
+Maintenance Records: Provide a separate Maintenance Records module connected to the Maintenance Record entity in the database. Managers should be able to add maintenance records, view existing records, edit maintenance details, update maintenance status, record maintenance costs, and track upcoming service dates for assets they manage.
+Asset Requests and Approvals: Review employee asset requests, approve or reject requests according to permissions, and track asset return requests.
+Reports: View employee-wise asset allocation, ownership details, maintenance history, and department-level asset utilization.
+Notifications: Receive notifications for new requests, ownership changes, maintenance schedules, and overdue returns.
+Manager Profile: View and update personal account details.
+The Manager Dashboard should have fully functional tables, search, filters, pagination, forms, and action buttons. All modifications must be persisted in the database. Managers must not access records outside their authorized department or team.
+
+3. Employee Dashboard — Personal Assets and Requests
+Create a separate, simple, user-friendly Employee Dashboard focused on personal asset information and operations.
+
+Include the following modules:
+
+Employee Overview: Display the employee's assigned assets, pending requests, approved requests, upcoming maintenance or return dates, and reported issues.
+My Profile: View personal information, employee ID, department, designation, and assigned manager.
+My Assets: Display all assets assigned to the logged-in employee, including asset ID, asset name, category, serial number, assignment date, condition, and ownership details.
+My Asset Ownership: View the ownership details and history of personally assigned assets. Employees should not be able to change official ownership records directly unless explicitly authorized.
+Request an Asset: Submit a new asset request and track its approval status.
+Return Asset: Submit asset return requests and view their status.
+Report Asset Issues: Report damaged, lost, or malfunctioning assets and track resolution.
+Maintenance Information: View maintenance history and upcoming service information for assigned assets.
+My Requests: View pending, approved, and rejected asset requests.
+Notifications: Receive updates about asset assignments, approvals, returns, and maintenance activities.
+Employees should only be able to view their own records and perform authorized operations.
+
+4. Database Entities and Module Integration
+Connect all dashboards to the same backend and database. Create or update the necessary entities, including:
+
+User
+Role
+Manager
+Employee
+Department
+Asset
+AssetOwnership
+MaintenanceRecord
+AssetRequest
+AssetAssignmentHistory
+Notification
+AuditLog
+Ensure the AssetOwnership entity maintains the current owner, asset reference, ownership start date, ownership end date where applicable, and transfer history. Ensure MaintenanceRecord is connected to the relevant asset and contains maintenance details, cost, dates, and status.
+
+5. UI and Functional Requirements
+Create a professional dashboard interface with a consistent sidebar, top navigation bar, search, notifications, profile menu, summary cards, charts, and data tables.
+
+Every module must open its own page or section. All buttons must perform the corresponding action, including creating, viewing, editing, updating, assigning, transferring, approving, rejecting, and maintaining records.
+
+Use forms with validation, confirmation dialogs, status badges, success/error messages, sorting, filtering, and pagination.
+
+Implement proper authentication and backend role-based authorization. Validate all operations on the server, not only in the frontend.
+
+Final objective: Generate all three complete dashboards with their corresponding modules and functional operations. The Admin manages the overall application, the Manager manages authorized employee records, asset ownership, and maintenance records, and the Employee manages personal assets, requests, and issue reports. Use real database records rather than static sample values, and ensure all changes are reflected across the relevant dashboards.
