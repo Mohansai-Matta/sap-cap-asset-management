@@ -1,59 +1,131 @@
-### createDepartment
-POST http://localhost:4004/odata/v4/catalog/CreateDepartment
+# Local test requests (REST Client extension in SAP Business Application Studio / VS Code)
+# Start the server first:  npm run watch   (cds watch --profile hybrid)
+# Mocked users: admin/admin (AssetAdmin), viewer/viewer (AssetViewer)
+
+@server = http://localhost:4004
+@catalog = {{server}}/odata/v4/catalog
+@auth = Basic admin:admin
+
+### Read departments
+GET {{catalog}}/DepartmentSrv?$filter=IsActiveEntity eq true
+Authorization: {{auth}}
+
+### Create department (dept_id is optional - generated if omitted)
+POST {{catalog}}/CreateDepartment
+Authorization: {{auth}}
 Content-Type: application/json
 
 {
-    "dept_id": "22222222-2222-2222-2222-222222222222",
-    "name": "Human Resources",
-    "cost_center": "HR1001"
+    "dept_id": "33333333-3333-4333-8333-333333333333",
+    "name": "Finance",
+    "cost_center": "FI1001"
 }
 
-
-### create Employee
-POST http://localhost:4004/odata/v4/catalog/CreateEmployee
+### Update department
+POST {{catalog}}/UpdateDepartment
+Authorization: {{auth}}
 Content-Type: application/json
 
 {
-    "employee_id": "e2222222-2222-2222-2222-222222224223",
-    "full_name": "Rahul Kumar",
-    "email": "rahul.kumar@company.com",
-    "phone": "9876543211",
+    "dept_id": "33333333-3333-4333-8333-333333333333",
+    "cost_center": "FI2002"
+}
+
+### Create employee
+POST {{catalog}}/CreateEmployee
+Authorization: {{auth}}
+Content-Type: application/json
+
+{
+    "employee_id": "e4444444-4444-4444-8444-444444444444",
+    "full_name": "Anita Rao",
+    "email": "anita.rao@company.com",
+    "phone": "9876543233",
     "location": "Hyderabad",
     "status": "Active",
-    "dept_id": "22222222-2222-2222-2222-222222222222"
+    "dept_id": "33333333-3333-4333-8333-333333333333"
 }
 
-### CreateManager
-
-POST http://localhost:4004/odata/v4/catalog/CreateManager
+### Create manager
+POST {{catalog}}/CreateManager
+Authorization: {{auth}}
 Content-Type: application/json
 
 {
-    "manager_id": "m1111111-1111-1111-1111-111111111111",
-    "full_name": "Vijay Kumar",
-    "email": "vijay.kumar@company.com",
-    "phone": "9876543201",
-    "employee_id": "e1111111-1111-1111-1111-111111111111",
-    "dept_id": "11111111-1111-1111-1111-111111111111"
+    "manager_id": "a2222222-2222-4222-8222-222222222222",
+    "full_name": "Anita Rao",
+    "email": "anita.rao@company.com",
+    "phone": "9876543233",
+    "employee_id": "e4444444-4444-4444-8444-444444444444",
+    "dept_id": "33333333-3333-4333-8333-333333333333"
 }
 
-### CreateAssetCategories
-POST http://localhost:4004/odata/v4/catalog/CreateAssetCategory
+### Create asset category
+POST {{catalog}}/CreateAssetCategory
+Authorization: {{auth}}
 Content-Type: application/json
 
 {
-    "asset_category_id": "ac111111-1111-1111-1111-111111111111",
-    "name": "Laptop",
-    "lifespan_months": 48
+    "asset_category_id": "ac333333-3333-4333-8333-333333333333",
+    "name": "Mobile Phone",
+    "lifespan_months": 36
 }
 
-###vendor
-POST http://localhost:4004/odata/v4/catalog/CreateVendor
+### Create vendor
+POST {{catalog}}/CreateVendor
+Authorization: {{auth}}
 Content-Type: application/json
 
 {
-    "vendor_id": "v1111111-1111-1111-1111-111111111111",
-    "manager_id": "m2222222-2222-2222-2222-222222222222",
-    "name": "Dell Technologies",
-    "email": "support@dell.com"
+    "vendor_id": "b2222222-2222-4222-8222-222222222222",
+    "manager_id": "a2222222-2222-4222-8222-222222222222",
+    "name": "Lenovo",
+    "email": "support@lenovo.com"
+}
+
+### Create asset
+POST {{catalog}}/CreateAsset
+Authorization: {{auth}}
+Content-Type: application/json
+
+{
+    "asset_id": "f3333333-3333-4333-8333-333333333333",
+    "asset_tag": "AST-0003",
+    "serial_number": "SN-LN-T14-003",
+    "category_id": "ac111111-1111-4111-8111-111111111111",
+    "vendor_id": "b2222222-2222-4222-8222-222222222222",
+    "manager_id": "a2222222-2222-4222-8222-222222222222",
+    "model": "ThinkPad T14",
+    "purchase_date": "2026-06-01",
+    "purchase_cost": 92000.00,
+    "currency": "INR",
+    "warranty_expiry": "2029-05-31",
+    "status": "InStock"
+}
+
+### Assign asset (updates current holder + status of the asset)
+POST {{catalog}}/CreateOwnershipLedger
+Authorization: {{auth}}
+Content-Type: application/json
+
+{
+    "asset_id": "f3333333-3333-4333-8333-333333333333",
+    "to_employee_id": "e4444444-4444-4444-8444-444444444444",
+    "action": "Assign",
+    "transition_date": "2026-06-05",
+    "manager_id": "a2222222-2222-4222-8222-222222222222",
+    "notes": "New joiner laptop"
+}
+
+### Read asset with history
+GET {{catalog}}/AssetSrv(asset_id=f3333333-3333-4333-8333-333333333333,IsActiveEntity=true)?$expand=ownership_history,current_holder
+Authorization: {{auth}}
+
+### Viewer must not be able to change data (expect 403)
+POST {{catalog}}/DeleteAsset
+Authorization: Basic viewer:viewer
+Content-Type: application/json
+
+{
+    "asset_id": "f3333333-3333-4333-8333-333333333333"
 }

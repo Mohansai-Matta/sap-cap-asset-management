@@ -1,0 +1,31 @@
+<mvc:View
+    controllerName="assetmanagement.launchpad.controller.Home"
+    xmlns:mvc="sap.ui.core.mvc"
+    xmlns="sap.m"
+    xmlns:app="http://schemas.sap.com/sapui5/extension/sap.ui.core.CustomData/1"
+    displayBlock="true">
+    <Page title="{i18n>appTitle}" class="sapUiContentPadding">
+        <FlexBox wrap="Wrap" alignItems="Start">
+            <GenericTile class="sapUiTinyMarginBegin sapUiTinyMarginTop" header="{i18n>assetsTitle}" subheader="{i18n>assetsSubtitle}" press=".onOpenApp" app:target="assets">
+                <TileContent>
+                    <ImageContent src="sap-icon://laptop" />
+                </TileContent>
+            </GenericTile>
+            <GenericTile class="sapUiTinyMarginBegin sapUiTinyMarginTop" header="{i18n>employeeTitle}" subheader="{i18n>employeeSubtitle}" press=".onOpenApp" app:target="employee">
+                <TileContent>
+                    <ImageContent src="sap-icon://employee" />
+                </TileContent>
+            </GenericTile>
+            <GenericTile class="sapUiTinyMarginBegin sapUiTinyMarginTop" header="{i18n>managerTitle}" subheader="{i18n>managerSubtitle}" press=".onOpenApp" app:target="manager">
+                <TileContent>
+                    <ImageContent src="sap-icon://manager" />
+                </TileContent>
+            </GenericTile>
+            <GenericTile class="sapUiTinyMarginBegin sapUiTinyMarginTop" header="{i18n>departmentTitle}" subheader="{i18n>departmentSubtitle}" press=".onOpenApp" app:target="department">
+                <TileContent>
+                    <ImageContent src="sap-icon://org-chart" />
+                </TileContent>
+            </GenericTile>
+        </FlexBox>
+    </Page>
+</mvc:View>

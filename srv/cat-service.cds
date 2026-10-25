@@ -1,19 +1,35 @@
 using { asset.management as db } from '../db/schema';
 using { asset.management.common as common } from '../db/common';
 
-
-
+/**
+ * Asset management service.
+ * - AssetViewer: read-only access
+ * - AssetAdmin : full access incl. all actions
+ * Role templates / role collections are defined in xs-security.json.
+ */
+@path    : '/odata/v4/catalog'
+@requires: ['AssetViewer', 'AssetAdmin']
 service CatalogService {
 
-    entity DepartmentSrv as projection on db.Departments;
-    entity EmployeeSrv as projection on db.Employees;
-    entity AssetCategorySrv as projection on db.AssetCategories;
-    entity VendorSrv as projection on db.Vendors;
-    entity AssetSrv as projection on db.Assets;
-    entity OwnershipLedgerSrv as projection on db.OwnershipLedgers;
-    entity ManagerSrv as projection on db.Managers;
+    @odata.draft.enabled
+    entity DepartmentSrv        as projection on db.Departments;
+
+    @odata.draft.enabled
+    entity EmployeeSrv          as projection on db.Employees;
+
+    @odata.draft.enabled
+    entity ManagerSrv           as projection on db.Managers;
+
+    @odata.draft.enabled
+    entity AssetSrv             as projection on db.Assets;
+
+    entity AssetCategorySrv     as projection on db.AssetCategories;
+    entity VendorSrv            as projection on db.Vendors;
+    entity OwnershipLedgerSrv   as projection on db.OwnershipLedgers;
     entity MaintenanceRecordSrv as projection on db.MaintenanceRecords;
-    entity ArchiveRecordSrv as projection on db.ArchiveRecords;
+    entity ArchiveRecordSrv     as projection on db.ArchiveRecords;
+
+/* Department Actions */
 
     action CreateDepartment(
         dept_id     : common.Identifier,
@@ -116,7 +132,7 @@ action CreateAsset(
     model                   : String(100),
     purchase_date           : Date,
     purchase_cost           : Decimal(15,2),
-    currency                : String(3),
+    currency                : String(3), // ISO 4217 code, e.g. INR
     warranty_expiry         : Date,
     first_distribution_date : Date,
     status                  : String(30),
@@ -133,7 +149,7 @@ action UpdateAsset(
     model                   : String(100),
     purchase_date           : Date,
     purchase_cost           : Decimal(15,2),
-    currency                : String(3),
+    currency                : String(3), // ISO 4217 code, e.g. INR
     warranty_expiry         : Date,
     first_distribution_date : Date,
     status                  : String(30),

@@ -1,91 +1,57 @@
 using CatalogService as service from '../../srv/cat-service';
+
 annotate service.EmployeeSrv with @(
-    UI.FieldGroup #GeneratedGroup : {
-        $Type : 'UI.FieldGroupType',
-        Data : [
-            {
-                $Type : 'UI.DataField',
-                Label : 'full_name',
-                Value : full_name,
-            },
-            {
-                $Type : 'UI.DataField',
-                Label : 'email',
-                Value : email,
-            },
-            {
-                $Type : 'UI.DataField',
-                Label : 'phone',
-                Value : phone,
-            },
-            {
-                $Type : 'UI.DataField',
-                Label : 'location',
-                Value : location,
-            },
-            {
-                $Type : 'UI.DataField',
-                Label : 'status',
-                Value : status,
-            },
-        ],
+    UI.HeaderInfo        : {
+        TypeName      : '{i18n>Employee}',
+        TypeNamePlural: '{i18n>Employees}',
+        Title         : { Value: full_name },
+        Description   : { Value: email }
     },
-    UI.Facets : [
+    UI.SelectionFields   : [
+        full_name,
+        department_dept_id,
+        location,
+        status
+    ],
+    UI.LineItem          : [
+        { Value: full_name },
+        { Value: email },
+        { Value: phone },
+        { Value: location },
+        { Value: department_dept_id },
+        { Value: status }
+    ],
+    UI.FieldGroup #General: {
+        Data: [
+            { Value: full_name },
+            { Value: email },
+            { Value: phone },
+            { Value: location },
+            { Value: department_dept_id },
+            { Value: status }
+        ]
+    },
+    UI.Facets            : [
         {
             $Type : 'UI.ReferenceFacet',
-            ID : 'GeneratedFacet1',
-            Label : 'General Information',
-            Target : '@UI.FieldGroup#GeneratedGroup',
-        },
-    ],
-    UI.LineItem : [
-        {
-            $Type : 'UI.DataField',
-            Label : 'full_name',
-            Value : full_name,
+            ID    : 'GeneralFacet',
+            Label : '{i18n>GeneralInformation}',
+            Target: '@UI.FieldGroup#General'
         },
         {
-            $Type : 'UI.DataField',
-            Label : 'email',
-            Value : email,
-        },
-        {
-            $Type : 'UI.DataField',
-            Label : 'phone',
-            Value : phone,
-        },
-        {
-            $Type : 'UI.DataField',
-            Label : 'location',
-            Value : location,
-        },
-        {
-            $Type : 'UI.DataField',
-            Label : 'status',
-            Value : status,
-        },
-    ],
+            $Type : 'UI.ReferenceFacet',
+            ID    : 'AssetsFacet',
+            Label : '{i18n>Assets}',
+            Target: 'asset/@UI.LineItem#Embedded'
+        }
+    ]
 );
 
-annotate service.EmployeeSrv with {
-    department @Common.ValueList : {
-        $Type : 'Common.ValueListType',
-        CollectionPath : 'DepartmentSrv',
-        Parameters : [
-            {
-                $Type : 'Common.ValueListParameterInOut',
-                LocalDataProperty : department_dept_id,
-                ValueListProperty : 'dept_id',
-            },
-            {
-                $Type : 'Common.ValueListParameterDisplayOnly',
-                ValueListProperty : 'name',
-            },
-            {
-                $Type : 'Common.ValueListParameterDisplayOnly',
-                ValueListProperty : 'cost_center',
-            },
-        ],
-    }
-};
-
+annotate service.AssetSrv with @(
+    UI.LineItem #Embedded: [
+        { Value: asset_tag },
+        { Value: model },
+        { Value: serial_number },
+        { Value: status }
+    ]
+);

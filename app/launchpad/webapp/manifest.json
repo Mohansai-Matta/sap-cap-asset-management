@@ -1,0 +1,64 @@
+{
+  "_version": "1.89.0",
+  "sap.app": {
+    "id": "assetmanagement.launchpad",
+    "type": "application",
+    "i18n": {
+      "bundleName": "assetmanagement.launchpad.i18n.i18n",
+      "supportedLocales": [
+        ""
+      ],
+      "fallbackLocale": ""
+    },
+    "applicationVersion": {
+      "version": "0.0.1"
+    },
+    "title": "{{appTitle}}",
+    "description": "{{appDescription}}"
+  },
+  "sap.ui": {
+    "technology": "UI5",
+    "icons": {
+      "icon": "sap-icon://home"
+    },
+    "deviceTypes": {
+      "desktop": true,
+      "tablet": true,
+      "phone": true
+    }
+  },
+  "sap.ui5": {
+    "dependencies": {
+      "minUI5Version": "1.153.0",
+      "libs": {
+        "sap.m": {},
+        "sap.ui.core": {}
+      }
+    },
+    "contentDensities": {
+      "compact": true,
+      "cozy": true
+    },
+    "models": {
+      "i18n": {
+        "type": "sap.ui.model.resource.ResourceModel",
+        "settings": {
+          "bundleName": "assetmanagement.launchpad.i18n.i18n",
+          "supportedLocales": [
+            ""
+          ],
+          "fallbackLocale": ""
+        }
+      }
+    },
+    "rootView": {
+      "viewName": "assetmanagement.launchpad.view.Home",
+      "type": "XML",
+      "id": "home"
+    }
+  },
+  "sap.cloud": {
+    "public": true,
+    "service": "assetmanagement"
+  }
+}

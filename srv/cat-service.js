@@ -1,264 +1,389 @@
 const cds = require('@sap/cds');
 
-module.exports = cds.service.impl(async function () {
+module.exports = class CatalogService extends cds.ApplicationService {
 
-    const {
-    DepartmentSrv,
-    EmployeeSrv,
-    ManagerSrv,
-    VendorSrv,
-    AssetSrv,
-    AssetCategorySrv,
-    OwnershipLedgerSrv
-    } = this.entities;
-    /* =========================
-       Department Actions
-    ========================= */
+    init() {
 
-    this.on('CreateDepartment', async (req) => {
+        const {
+            Departments,
+            Employees,
+            Managers,
+            Vendors,
+            Assets,
+            AssetCategories,
+            OwnershipLedgers,
+            MaintenanceRecords,
+            ArchiveRecords
+        } = cds.entities('asset.management');
 
-        const data = {
-            dept_id: req.data.dept_id,
-            name: req.data.name,
-            cost_center: req.data.cost_center
+        const {
+            DepartmentSrv,
+            EmployeeSrv,
+            ManagerSrv,
+            AssetSrv
+        } = this.entities;
+
+        /* =========================
+           Helpers
+        ========================= */
+
+        // Rejects the request if a referenced record does not exist
+        const assertExists = async (req, entity, key, value, label) => {
+            if (value === undefined || value === null) return;
+            const found = await SELECT.one.from(entity).columns(key).where({ [key]: value });
+            if (!found) req.reject(400, `${label} '${value}' does not exist`);
         };
 
-        const tx = cds.transaction(req);
+        // Rejects the request if other records still point to the record to be deleted
+        const assertNoDependents = async (req, dependents, value, label) => {
+            for (const { entity, fk, what } of dependents) {
+                const used = await SELECT.one.from(entity).columns('1 as x').where({ [fk]: value });
+                if (used) req.reject(409, `${label} '${value}' cannot be deleted because it is still referenced by ${what}`);
+            }
+        };
 
-        await tx.run(
-            INSERT.into(DepartmentSrv).entries(data)
+        // Removes undefined values so that UPDATE only touches the fields that were sent
+        const defined = (obj) => Object.fromEntries(
+            Object.entries(obj).filter(([, v]) => v !== undefined)
         );
 
-        return req.data;
-    });
-    this.on('UpdateDepartment', async (req) => {
+        // Applies the model's @mandatory, @assert.format and @assert.range rules to action input,
+        // as actions write to the database directly and bypass the generic input validation
+        const assertValid = (req, entity, row, isCreate) => {
+            const isEmpty = (v) => v === undefined || v === null || v === '';
+            for (const [name, element] of Object.entries(entity.elements)) {
+                if (element.key || element.isAssociation) continue;
+                const value = row[name];
 
-    const tx = cds.transaction(req);
+                if (element['@mandatory'] && (isCreate || name in row) && isEmpty(value)) {
+                    req.reject(400, `Value for '${name}' is required`);
+                }
+                if (value === undefined || value === null) continue;
 
-    const result = await tx.run(
-        UPDATE(DepartmentSrv)
-            .set({
-                name: req.data.name,
-                cost_center: req.data.cost_center
-            })
-            .where({
-                dept_id: req.data.dept_id
-            })
-    );
+                const format = element['@assert.format'];
+                if (format && !new RegExp(format).test(value)) {
+                    req.reject(400, `Value '${value}' for '${name}' has an invalid format`);
+                }
 
-    return result;
-    });
+                const range = element['@assert.range'];
+                if (range && element.enum) {
+                    const allowed = Object.entries(element.enum).map(([key, e]) => e.val ?? key);
+                    if (!allowed.includes(value)) {
+                        req.reject(400, `Value '${value}' for '${name}' is not one of: ${allowed.join(', ')}`);
+                    }
+                } else if (Array.isArray(range)) {
+                    const [min, max] = range.map((r) => (typeof r === 'number' ? r : undefined));
+                    if ((min !== undefined && value < min) || (max !== undefined && value > max)) {
+                        req.reject(400, `Value '${value}' for '${name}' is out of range`);
+                    }
+                }
+            }
+        };
 
-    this.on('DeleteDepartment', async (req) => {
+        const assertDateOrder = (req, from, to, message) => {
+            if (from && to && new Date(to) < new Date(from)) req.reject(400, message);
+        };
 
-    const tx = cds.transaction(req);
+        /**
+         * Registers Create<name>, Update<name> and Delete<name> actions
+         * for one entity in a uniform way.
+         */
+        const registerCrudActions = (name, { entity, key, label, refs = [], toRow, dependents = [], validate, afterCreate, beforeDelete }) => {
 
-    const result = await tx.run(
-        DELETE.from(DepartmentSrv)
-            .where({
-                dept_id: req.data.dept_id
-            })
-    );
+            const checkRefs = async (req) => {
+                for (const ref of refs) {
+                    await assertExists(req, ref.entity, ref.key, req.data[ref.param], ref.label);
+                }
+            };
 
-    return result;
-    });
+            this.on(`Create${name}`, async (req) => {
+                const id = req.data[key] || cds.utils.uuid();
 
-    //CreateEmoloyee
-    this.on('CreateEmployee', async (req) => {
+                const existing = await SELECT.one.from(entity).columns(key).where({ [key]: id });
+                if (existing) req.reject(409, `${label} '${id}' already exists`);
 
-    const tx = cds.transaction(req);
+                await checkRefs(req);
+                const row = { ...defined(toRow(req.data)), [key]: id };
+                assertValid(req, entity, row, true);
+                if (validate) await validate(req, row);
 
-    const department = await tx.run(
-        SELECT.one.from(DepartmentSrv)
-            .where({ dept_id: req.data.dept_id })
-    );
+                await INSERT.into(entity).entries(row);
+                if (afterCreate) await afterCreate(req, row);
 
-    if (!department) {
-        req.error(400, 'Department does not exist');
+                return SELECT.from(entity).where({ [key]: id });
+            });
+
+            this.on(`Update${name}`, async (req) => {
+                const id = req.data[key];
+                if (!id) req.reject(400, `Parameter '${key}' is required`);
+
+                const current = await SELECT.one.from(entity).where({ [key]: id });
+                if (!current) req.reject(404, `${label} '${id}' not found`);
+
+                await checkRefs(req);
+                const changes = defined(toRow(req.data));
+                assertValid(req, entity, changes, false);
+                if (validate) await validate(req, { ...current, ...changes });
+
+                if (Object.keys(changes).length) {
+                    await UPDATE(entity).set(changes).where({ [key]: id });
+                }
+                return `${label} '${id}' updated successfully`;
+            });
+
+            this.on(`Delete${name}`, async (req) => {
+                const id = req.data[key];
+                if (!id) req.reject(400, `Parameter '${key}' is required`);
+
+                await assertNoDependents(req, dependents, id, label);
+                if (beforeDelete) await beforeDelete(req, id);
+
+                const deleted = await DELETE.from(entity).where({ [key]: id });
+                if (!deleted) req.reject(404, `${label} '${id}' not found`);
+
+                return `${label} '${id}' deleted successfully`;
+            });
+
+            return { dependents, label, key };
+        };
+
+        /* =========================
+           Validation rules
+        ========================= */
+
+        const validateAsset = (req, asset) => {
+            assertDateOrder(req, asset.purchase_date, asset.warranty_expiry,
+                'Warranty expiry must not be before the purchase date');
+            assertDateOrder(req, asset.purchase_date, asset.first_distribution_date,
+                'First distribution date must not be before the purchase date');
+        };
+
+        const assertUniqueAssetTag = async (req, asset) => {
+            if (!asset.asset_tag) return;
+            const other = await SELECT.one.from(Assets).columns('asset_id').where({ asset_tag: asset.asset_tag });
+            if (other && other.asset_id !== asset.asset_id) {
+                req.reject(409, `Asset tag '${asset.asset_tag}' is already used by another asset`);
+            }
+        };
+
+        const validateMaintenance = (req, record) => {
+            assertDateOrder(req, record.reported_date, record.completed_date,
+                'Completed date must not be before the reported date');
+        };
+
+        /* =========================
+           Department Actions
+        ========================= */
+
+        const department = registerCrudActions('Department', {
+            entity: Departments,
+            key: 'dept_id',
+            label: 'Department',
+            toRow: (d) => ({
+                name: d.name,
+                cost_center: d.cost_center
+            }),
+            dependents: [
+                { entity: Employees, fk: 'department_dept_id', what: 'employees' },
+                { entity: Managers, fk: 'department_dept_id', what: 'managers' }
+            ]
+        });
+
+        /* =========================
+           Employee Actions
+        ========================= */
+
+        const employee = registerCrudActions('Employee', {
+            entity: Employees,
+            key: 'employee_id',
+            label: 'Employee',
+            refs: [
+                { param: 'dept_id', entity: Departments, key: 'dept_id', label: 'Department' }
+            ],
+            toRow: (d) => ({
+                full_name: d.full_name,
+                email: d.email,
+                phone: d.phone,
+                location: d.location,
+                status: d.status,
+                department_dept_id: d.dept_id
+            }),
+            dependents: [
+                { entity: Assets, fk: 'current_holder_employee_id', what: 'assets currently assigned to the employee' },
+                { entity: Managers, fk: 'employee_employee_id', what: 'a manager record' }
+            ]
+        });
+
+        /* =========================
+           Manager Actions
+        ========================= */
+
+        const manager = registerCrudActions('Manager', {
+            entity: Managers,
+            key: 'manager_id',
+            label: 'Manager',
+            refs: [
+                { param: 'employee_id', entity: Employees, key: 'employee_id', label: 'Employee' },
+                { param: 'dept_id', entity: Departments, key: 'dept_id', label: 'Department' }
+            ],
+            toRow: (d) => ({
+                full_name: d.full_name,
+                email: d.email,
+                phone: d.phone,
+                employee_employee_id: d.employee_id,
+                department_dept_id: d.dept_id
+            }),
+            dependents: [
+                { entity: Vendors, fk: 'manager_manager_id', what: 'vendors' },
+                { entity: Assets, fk: 'manager_manager_id', what: 'assets' }
+            ]
+        });
+
+        /* =========================
+           Vendor Actions
+        ========================= */
+
+        registerCrudActions('Vendor', {
+            entity: Vendors,
+            key: 'vendor_id',
+            label: 'Vendor',
+            refs: [
+                { param: 'manager_id', entity: Managers, key: 'manager_id', label: 'Manager' }
+            ],
+            toRow: (d) => ({
+                manager_manager_id: d.manager_id,
+                name: d.name,
+                email: d.email
+            }),
+            dependents: [
+                { entity: Assets, fk: 'vendor_vendor_id', what: 'assets' },
+                { entity: MaintenanceRecords, fk: 'service_vendor_vendor_id', what: 'maintenance records' }
+            ]
+        });
+
+        /* =========================
+           Asset Category Actions
+        ========================= */
+
+        registerCrudActions('AssetCategory', {
+            entity: AssetCategories,
+            key: 'asset_category_id',
+            label: 'Asset category',
+            toRow: (d) => ({
+                name: d.name,
+                lifespan_months: d.lifespan_months
+            }),
+            dependents: [
+                { entity: Assets, fk: 'category_asset_category_id', what: 'assets' }
+            ]
+        });
+
+        /* =========================
+           Asset Actions
+        ========================= */
+
+        const asset = registerCrudActions('Asset', {
+            entity: Assets,
+            key: 'asset_id',
+            label: 'Asset',
+            refs: [
+                { param: 'category_id', entity: AssetCategories, key: 'asset_category_id', label: 'Asset category' },
+                { param: 'vendor_id', entity: Vendors, key: 'vendor_id', label: 'Vendor' },
+                { param: 'manager_id', entity: Managers, key: 'manager_id', label: 'Manager' },
+                { param: 'employee_id', entity: Employees, key: 'employee_id', label: 'Employee' }
+            ],
+            toRow: (d) => ({
+                asset_tag: d.asset_tag,
+                serial_number: d.serial_number,
+                category_asset_category_id: d.category_id,
+                vendor_vendor_id: d.vendor_id,
+                manager_manager_id: d.manager_id,
+                model: d.model,
+                purchase_date: d.purchase_date,
+                purchase_cost: d.purchase_cost,
+                currency_code: d.currency,
+                warranty_expiry: d.warranty_expiry,
+                first_distribution_date: d.first_distribution_date,
+                status: d.status ?? (d.employee_id ? 'Assigned' : undefined),
+                current_holder_employee_id: d.employee_id
+            }),
+            validate: async (req, row) => {
+                validateAsset(req, row);
+                await assertUniqueAssetTag(req, row);
+            },
+            beforeDelete: async (req, id) => {
+                // remove composition children together with the asset
+                await DELETE.from(OwnershipLedgers).where({ asset_asset_id: id });
+                await DELETE.from(MaintenanceRecords).where({ asset_asset_id: id });
+                await DELETE.from(ArchiveRecords).where({ asset_asset_id: id });
+            }
+        });
+
+        /* =========================
+           Ownership Ledger Actions
+        ========================= */
+
+        // Keeps the asset's current holder and status in sync with the ledger
+        const applyOwnershipChange = async (row) => {
+            if (!row.asset_asset_id || !row.action) return;
+            const changes = row.action === 'Return'
+                ? { current_holder_employee_id: null, status: 'InStock' }
+                : { current_holder_employee_id: row.to_employee_employee_id, status: 'Assigned' };
+            await UPDATE(Assets).set(changes).where({ asset_id: row.asset_asset_id });
+        };
+
+        registerCrudActions('OwnershipLedger', {
+            entity: OwnershipLedgers,
+            key: 'ledger_id',
+            label: 'Ownership ledger entry',
+            refs: [
+                { param: 'asset_id', entity: Assets, key: 'asset_id', label: 'Asset' },
+                { param: 'from_employee_id', entity: Employees, key: 'employee_id', label: 'Employee' },
+                { param: 'to_employee_id', entity: Employees, key: 'employee_id', label: 'Employee' },
+                { param: 'manager_id', entity: Managers, key: 'manager_id', label: 'Manager' }
+            ],
+            toRow: (d) => ({
+                asset_asset_id: d.asset_id,
+                from_employee_employee_id: d.from_employee_id,
+                to_employee_employee_id: d.to_employee_id,
+                action: d.action,
+                transition_date: d.transition_date,
+                recorded_by_manager_id: d.manager_id,
+                notes: d.notes,
+                created_at: d.created_at
+            }),
+            validate: (req, row) => {
+                if (row.action && row.action !== 'Return' && !row.to_employee_employee_id) {
+                    req.reject(400, `Parameter 'to_employee_id' is required for action '${row.action}'`);
+                }
+            },
+            afterCreate: (req, row) => applyOwnershipChange(row)
+        });
+
+        /* =========================
+           Fiori (draft) handlers
+        ========================= */
+
+        // Same referential checks for deletions triggered from the Fiori apps
+        for (const [srvEntity, crud] of [
+            [DepartmentSrv, department],
+            [EmployeeSrv, employee],
+            [ManagerSrv, manager],
+            [AssetSrv, asset]
+        ]) {
+            this.before('DELETE', srvEntity, (req) =>
+                assertNoDependents(req, crud.dependents, req.data[crud.key], crud.label)
+            );
+        }
+
+        this.before(['CREATE', 'UPDATE'], AssetSrv, async (req) => {
+            validateAsset(req, req.data);
+            await assertUniqueAssetTag(req, req.data);
+            for (const m of req.data.maintenance_records ?? []) validateMaintenance(req, m);
+        });
+
+        this.before(['CREATE', 'UPDATE'], 'MaintenanceRecordSrv', (req) => validateMaintenance(req, req.data));
+
+        return super.init();
     }
-
-    const data = {
-        employee_id: req.data.employee_id,
-        full_name: req.data.full_name,
-        email: req.data.email,
-        phone: req.data.phone,
-        location: req.data.location,
-        status: req.data.status,
-        department_dept_id: req.data.dept_id
-    };
-
-    
-    const result = await tx.run(
-        INSERT.into(EmployeeSrv).entries(data)
-    );
-
-    return req.data
-    
-    });
-
-    this.on('UpdateEmployee', async (req) => {
-
-    const tx = cds.transaction(req);
-
-    const result = await tx.run(
-        UPDATE(EmployeeSrv)
-            .set({
-                full_name: req.data.full_name,
-                email: req.data.email,
-                phone: req.data.phone,
-                location: req.data.location,
-                status: req.data.status,
-                department_dept_id: req.data.dept_id
-            })
-            .where({
-                employee_id: req.data.employee_id
-            })
-    );
-
-    return result;
-    });
-
-    this.on('DeleteEmployee', async (req) => {
-
-    const tx = cds.transaction(req);
-
-    const result = await tx.run(
-        DELETE.from(EmployeeSrv)
-            .where({
-                employee_id: req.data.employee_id
-            })
-    );
-
-    return result;
-    });
-
-    // Create Manager
-   this.on('CreateManager', async (req) => {
-
-    const tx = cds.transaction(req);
-
-    const employee = await tx.run(
-        SELECT.one.from(EmployeeSrv)
-            .where({
-                employee_id: req.data.employee_id
-            })
-    );
-
-    if (!employee) {
-        req.error(400, 'Employee does not exist');
-    }
-
-    const department = await tx.run(
-        SELECT.one.from(DepartmentSrv)
-            .where({
-                dept_id: req.data.dept_id
-            })
-    );
-
-    if (!department) {
-        req.error(400, 'Department does not exist');
-    }
-
-    const data = {
-        manager_id: req.data.manager_id,
-        full_name: req.data.full_name,
-        email: req.data.email,
-        phone: req.data.phone,
-        employee_employee_id: req.data.employee_id,
-        department_dept_id: req.data.dept_id
-    };
-
-    const result = await tx.run(
-        INSERT.into(ManagerSrv).entries(data)
-    );
-
-    return [data];
-    });
-
-
-    this.on('UpdateManager', async (req) => {
-
-    const tx = cds.transaction(req);
-
-    const result = await tx.run(
-        UPDATE(ManagerSrv)
-            .set({
-                full_name: req.data.full_name,
-                email: req.data.email,
-                phone: req.data.phone,
-                employee_employee_id: req.data.employee_id,
-                department_dept_id: req.data.dept_id
-            })
-            .where({
-                manager_id: req.data.manager_id
-            })
-    );
-
-    return result;
-    });
-
-   this.on('DeleteManager', async (req) => {
-
-    const tx = cds.transaction(req);
-
-    const result = await tx.run(
-        DELETE.from(ManagerSrv)
-            .where({
-                manager_id: req.data.manager_id
-            })
-    );
-
-    return result;
-    });
-
-    //Create AssetCategory
-
-    this.on('CreateAssetCategory', async (req) => {
-
-    const data = {
-        asset_category_id: req.data.asset_category_id,
-        name: req.data.name,
-        lifespan_months: req.data.lifespan_months
-    };
-
-    const tx = cds.transaction(req);
-
-    const result = await tx.run(
-        INSERT.into(AssetCategorySrv).entries(data)
-    );
-
-    return [data];
-    });
-
-    //vendor
-
-    this.on('CreateVendor', async (req) => {
-
-    const tx = cds.transaction(req);
-
-    const manager = await tx.run(
-        SELECT.one.from(ManagerSrv)
-            .where({
-                manager_id: req.data.manager_id
-            })
-    );
-
-    if (!manager) {
-        req.error(400, 'Manager does not exist');
-    }
-
-    const data = {
-        vendor_id: req.data.vendor_id,
-        manager_manager_id: req.data.manager_id,
-        name: req.data.name,
-        email: req.data.email
-    };
-
-    const result = await tx.run(
-        INSERT.into(VendorSrv).entries(data)
-    );
-
-    return [data];
-    });
-
-})
+};

@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
-    <title>App Title</title>
+    <title>Manage Departments</title>
     <style>
         html, body, body > div, #container, #container-uiarea {
             height: 100%;
@@ -15,7 +15,7 @@
         src="https://sapui5.hana.ondemand.com/1.153.0/resources/sap-ui-core.js"
         data-sap-ui-theme="sap_horizon"
         data-sap-ui-resource-roots='{
-            "department": "./"
+            "assetmanagement.department": "./"
         }'
         data-sap-ui-on-init="module:sap/ui/core/ComponentSupport"
         data-sap-ui-compat-version="edge"
@@ -26,7 +26,7 @@
 <body class="sapUiBody sapUiSizeCompact" id="content">
     <div
         data-sap-ui-component
-        data-name="department"
+        data-name="assetmanagement.department"
         data-id="container"
         data-settings='{"id" : "department"}'
         data-handle-validation="true"

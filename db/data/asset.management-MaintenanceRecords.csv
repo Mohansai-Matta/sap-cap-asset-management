@@ -1,0 +1,2 @@
+maintenance_id;asset_asset_id;type;reported_by_manager_id;service_vendor_vendor_id;reported_date;completed_date;status;outcome;cost;currency_code;covered_by_warranty;next_due_date;description
+d1111111-1111-4111-8111-111111111111;f1111111-1111-4111-8111-111111111111;Battery;a1111111-1111-4111-8111-111111111111;b1111111-1111-4111-8111-111111111111;2025-09-01;2025-09-05;Completed;Battery replaced;0.00;INR;true;2026-09-01;Battery draining quickly

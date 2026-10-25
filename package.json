@@ -1,20 +1,29 @@
 {
-  "name": "miniproject",
+  "name": "asset-management",
   "version": "1.0.0",
-  "description": "Welcome to your new CAP project.",
+  "description": "Asset Management - SAP CAP application on SAP HANA Cloud with SAP Fiori elements (SAPUI5) apps",
   "license": "ISC",
-  "author": "",
-  "type": "commonjs",
-  "main": "index.js",
+  "private": true,
+  "engines": {
+    "node": ">=20"
+  },
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
-    "watch-employee": "cds watch --open employee/index.html?sap-ui-xx-viewCache=false --livereload false",
-    "watch-department": "cds watch --open department/index.html?sap-ui-xx-viewCache=false --livereload false",
-    "watch-manager": "cds watch --open manager/index.html?sap-ui-xx-viewCache=false --livereload false"
+    "start": "cds-serve",
+    "watch": "cds watch --profile hybrid",
+    "watch-employee": "cds watch --profile hybrid --open employee/index.html?sap-ui-xx-viewCache=false --livereload false",
+    "watch-department": "cds watch --profile hybrid --open department/index.html?sap-ui-xx-viewCache=false --livereload false",
+    "watch-manager": "cds watch --profile hybrid --open manager/index.html?sap-ui-xx-viewCache=false --livereload false",
+    "watch-assets": "cds watch --profile hybrid --open assets/index.html?sap-ui-xx-viewCache=false --livereload false",
+    "build": "cds build --production",
+    "build:mta": "mbt build -t mta_archives --mtar asset-management.mtar",
+    "deploy": "cf deploy mta_archives/asset-management.mtar --retries 1",
+    "undeploy": "cf undeploy asset-management --delete-services --delete-service-keys --delete-service-brokers"
   },
   "dependencies": {
     "@cap-js/hana": "^3.1.2",
-    "@sap/cds": "^10.2.1"
+    "@sap/cds": "^10.2.1",
+    "@sap/cds-common-content": "^3.2.0",
+    "@sap/xssec": "^4"
   },
   "devDependencies": {
     "@sap/cds-dk": "^10.2.0",
@@ -26,6 +35,56 @@
   "sapux": [
     "app/employee",
     "app/department",
-    "app/manager"
-  ]
+    "app/manager",
+    "app/assets"
+  ],
+  "cds": {
+    "requires": {
+      "db": {
+        "kind": "hana"
+      },
+      "auth": {
+        "[development]": {
+          "kind": "mocked",
+          "users": {
+            "admin": {
+              "password": "admin",
+              "roles": [
+                "AssetAdmin",
+                "AssetViewer"
+              ]
+            },
+            "viewer": {
+              "password": "viewer",
+              "roles": [
+                "AssetViewer"
+              ]
+            }
+          }
+        },
+        "[hybrid]": {
+          "kind": "mocked",
+          "users": {
+            "admin": {
+              "password": "admin",
+              "roles": [
+                "AssetAdmin",
+                "AssetViewer"
+              ]
+            },
+            "viewer": {
+              "password": "viewer",
+              "roles": [
+                "AssetViewer"
+              ]
+            }
+          }
+        },
+        "[production]": {
+          "kind": "xsuaa"
+        }
+      },
+      "html5-repo": true
+    }
+  }
 }

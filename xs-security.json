@@ -1,0 +1,48 @@
+{
+  "scopes": [
+    {
+      "name": "$XSAPPNAME.AssetAdmin",
+      "description": "Maintain all asset management data"
+    },
+    {
+      "name": "$XSAPPNAME.AssetViewer",
+      "description": "Display asset management data"
+    }
+  ],
+  "attributes": [],
+  "role-templates": [
+    {
+      "name": "AssetAdmin",
+      "description": "Asset Management Administrator",
+      "scope-references": [
+        "$XSAPPNAME.AssetAdmin",
+        "$XSAPPNAME.AssetViewer"
+      ],
+      "attribute-references": []
+    },
+    {
+      "name": "AssetViewer",
+      "description": "Asset Management Viewer",
+      "scope-references": [
+        "$XSAPPNAME.AssetViewer"
+      ],
+      "attribute-references": []
+    }
+  ],
+  "role-collections": [
+    {
+      "name": "AssetManagement_Admin",
+      "description": "Asset Management - full access",
+      "role-template-references": [
+        "$XSAPPNAME.AssetAdmin"
+      ]
+    },
+    {
+      "name": "AssetManagement_Viewer",
+      "description": "Asset Management - read-only access",
+      "role-template-references": [
+        "$XSAPPNAME.AssetViewer"
+      ]
+    }
+  ]
+}
