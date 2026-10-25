@@ -107,3 +107,7 @@ Open <http://localhost:4004/launchpad/index.html> or <http://localhost:4004/dash
 - Local hybrid run in SAP Business Application Studio: `cds deploy --to hana` (uses the bound HDI container), then `npm run watch`.
 
 For any other error, the service log shows the details: `cf logs asset-management-srv --recent`.
+
+**`cf deploy` fails in `asset-management-db-deployer`**: run `cf logs asset-management-db-deployer --recent` and look for lines with `error`.
+- *"... is not part of the content / undeploy"*: an artifact from an earlier version must be removed. Add it to `db/undeploy.json`.
+- *"unique constraint violated"* in a `.hdbtabledata` file: a sample-data row in `db/data` has the same key as a record created manually. Delete that record or remove the row from the CSV file.
