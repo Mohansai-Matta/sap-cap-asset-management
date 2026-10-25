@@ -1,0 +1,13 @@
+<mvc:View
+    controllerName="assetmanagement.dashboard.controller.Home"
+    xmlns:mvc="sap.ui.core.mvc"
+    xmlns="sap.m"
+    height="100%">
+    <Page id="homePage" showHeader="false">
+        <FlexBox height="100%" alignItems="Center" justifyContent="Center" direction="Column">
+            <BusyIndicator id="homeBusy" text="{i18n>loading}" />
+            <IllustratedMessage id="homeMessage" visible="false" illustrationType="sapIllus-NoActivities"
+                title="{i18n>noAccessTitle}" description="{i18n>noAccessText}" />
+        </FlexBox>
+    </Page>
+</mvc:View>

@@ -85,6 +85,10 @@ modules:
           artifacts:
             - launchpad.zip
           target-path: app/
+        - name: assetmanagementdashboard
+          artifacts:
+            - dashboard.zip
+          target-path: app/
         - name: assetmanagementassets
           artifacts:
             - assets.zip
@@ -107,11 +111,20 @@ modules:
           content-target: true
 
   # ---------------------------------------------------------------------------
-  # SAPUI5 / SAP Fiori elements apps
+  # SAPUI5 apps: entry page, Admin/Manager/Employee dashboards, SAP Fiori elements apps
   # ---------------------------------------------------------------------------
   - name: assetmanagementlaunchpad
     type: html5
     path: app/launchpad
+    build-parameters:
+      build-result: dist
+      builder: custom
+      commands:
+        - npm run build
+      supported-platforms: []
+  - name: assetmanagementdashboard
+    type: html5
+    path: app/dashboard
     build-parameters:
       build-result: dist
       builder: custom

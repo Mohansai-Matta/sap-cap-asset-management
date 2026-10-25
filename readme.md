@@ -1,83 +1,100 @@
 # Asset Management (SAP CAP · SAP HANA Cloud · SAP Fiori / SAPUI5)
 
-An asset management application built on the SAP stack only:
+An asset management application with three role-based dashboards (**Admin**, **Manager**, **Employee**) built on the SAP stack only:
 
 | Layer | Technology |
 |-------|------------|
 | Database | **SAP HANA Cloud** (HDI container, `@cap-js/hana`) |
 | Backend | **SAP Cloud Application Programming Model (CAP)**, Node.js, OData V4 |
-| UI | **SAP Fiori elements V4** apps (List Report / Object Page) on **SAPUI5**, plus a SAPUI5 entry page |
-| Security | **SAP Authorization and Trust Management (XSUAA)** |
+| UI | **SAPUI5** dashboards (sap.tnt ToolPage, sap.m, sap.f cards, sap.viz charts, sap.ui.export) and **SAP Fiori elements V4** master data apps |
+| Security | **SAP Authorization and Trust Management (XSUAA)**: role-based access checked on the server |
 | Runtime | **SAP BTP, Cloud Foundry**: standalone application router and HTML5 Application Repository |
+
+## Dashboards
+
+| Dashboard | Who | Modules |
+|-----------|-----|---------|
+| **Admin** | role collection `AssetManagement_Admin` | Overview (KPIs and charts), Manager Management (create, edit, activate/deactivate, team and assets), Employee Management (incl. login creation), Asset Management, Asset Ownership (assign, transfer, return, edit, history), Maintenance, Asset Requests (approve, reject, resolve), Reports & Analytics (charts and Excel export), Audit Log, Notifications, Settings & Permissions (departments, categories, vendors, users, roles) |
+| **Manager** | role collection `AssetManagement_Manager` | Overview, Employee Records (view and update), Employee Asset Details, Asset Ownership, Asset Allocation, Maintenance Records, Requests & Approvals, Reports, Notifications, Manager Profile |
+| **Employee** | role collection `AssetManagement_Employee` (also included for managers) | Overview, My Profile, My Assets, My Asset Ownership, Request an Asset, Return Asset, Report Asset Issues, Maintenance Information, My Requests, Notifications |
+
+Every dashboard has a sidebar, a header with module search, a notifications popover and a profile menu (switch dashboards, sign out). Tables support search, filters, sorting, paging ("More"), Excel export, status badges, confirmation dialogs and validated forms. All changes are stored in SAP HANA and show up on every dashboard that displays them.
+
+### Server-side authorization
+
+- Each dashboard uses its own OData service: `/odata/v4/admin`, `/odata/v4/manager` and `/odata/v4/employee`. Each service requires the matching XSUAA role.
+- **Managers** only see and change records of their team: employees of their department and employees who report to them, those employees' assets, and the assets they manage. Every action (assign, transfer, return, maintenance, approvals) is checked against this scope. A manager cannot decide on their own requests.
+- **Employees** only see their own profile, assets, ownership, maintenance and requests. They cannot change ownership records directly; they raise requests instead.
+- Every change is written to the **audit log**, and the people involved get **notifications** (new request, decision, assignment, transfer, maintenance, overdue return).
+
+## Data model (`db/schema.cds`)
+
+`Users`, `Roles`, `Managers`, `Employees`, `Departments`, `Assets`, `AssetCategories`, `Vendors`, `AssetOwnerships` (current owner, start/end date, expected return), `AssetAssignmentHistory` (every assign / transfer / return / ownership change), `MaintenanceRecords`, `AssetRequests` (new asset, return, issue report), `Notifications`, `AuditLogs`, `ArchiveRecords`.
+
+A `Users` entry links a login (the user ID from the identity provider, usually the e-mail address) to an employee record and a role. Access rights come from the XSUAA role collections.
 
 ## Project structure
 
 | Folder / file | Purpose |
 |---------------|---------|
-| `db/schema.cds`, `db/common.cds` | Domain model (Departments, Employees, Managers, Vendors, Asset Categories, Assets, Ownership Ledger, Maintenance and Archive records) |
-| `db/data/` | Sample data (CSV), deployed to SAP HANA by the HDI deployer |
-| `srv/cat-service.cds` / `.js` | `CatalogService` (OData V4 at `/odata/v4/catalog`): projections and Create/Update/Delete actions with validation |
-| `srv/auth.cds` | Authorization (`AssetViewer` = read, `AssetAdmin` = full access) |
-| `srv/labels.cds`, `_i18n/` | Field labels and value helps shared by all Fiori apps |
-| `app/assets`, `app/employee`, `app/manager`, `app/department` | SAP Fiori elements apps (draft-enabled create/edit) |
-| `app/launchpad` | SAPUI5 entry page with tiles for all apps (the approuter's welcome page) |
+| `db/` | Domain model and sample data (`db/data/*.csv`) |
+| `srv/admin-service.*`, `srv/manager-service.*`, `srv/employee-service.*`, `srv/user-service.*` | Services of the dashboards |
+| `srv/lib/` | Shared business logic: ownership, requests, maintenance, notifications, audit log, reports, user context and scoping |
+| `srv/cat-service.*`, `srv/labels.cds` | Service and labels of the SAP Fiori elements apps (admins only) |
+| `app/dashboard` | SAPUI5 app with the Admin, Manager and Employee dashboards (`#/admin`, `#/manager`, `#/employee`) |
+| `app/launchpad` | Entry page with tiles for the dashboards the user may open |
+| `app/assets`, `app/employee`, `app/manager`, `app/department` | SAP Fiori elements master data apps |
 | `.deploy/app-router` | Standalone SAP application router |
-| `xs-security.json` | XSUAA scopes, role templates and role collections |
+| `xs-security.json` | Scopes, role templates and role collections `AssetManagement_Admin`, `AssetManagement_Manager` and `AssetManagement_Employee` |
 | `mta.yaml` | Multi-target application descriptor for `mbt build` / `cf deploy` |
 
 ## Deploy from SAP Business Application Studio
 
 Prerequisites in your SAP BTP subaccount (Cloud Foundry enabled):
 
-- An **SAP HANA Cloud** instance that is running and mapped to your CF space (entitlement *SAP HANA Schemas & HDI Containers*, plan `hdi-shared`)
+- A running **SAP HANA Cloud** instance mapped to your CF space (entitlement *SAP HANA Schemas & HDI Containers*, plan `hdi-shared`)
 - Entitlements for **Authorization and Trust Management Service** (`application`) and **HTML5 Application Repository Service** (`app-host`, `app-runtime`)
 
-Steps (in a BAS terminal at the project root):
-
 ```bash
-# 1. log in to Cloud Foundry (or use "CF: Login to Cloud Foundry" in BAS)
 cf login -a https://api.cf.<region>.hana.ondemand.com
-
-# 2. build the MTA archive
 mbt build
-
-# 3. deploy
 cf deploy mta_archives/asset-management_1.0.0.mtar
 ```
 
-Alternatively, right-click `mta.yaml` and choose **Build MTA Project**, then right-click the generated `.mtar` and choose **Deploy MTA Archive**.
+Alternatively, right-click `mta.yaml` → **Build MTA Project**, then right-click the `.mtar` → **Deploy MTA Archive**.
 
 After deployment:
 
-1. In the BTP cockpit, go to **Security → Role Collections** and assign `AssetManagement_Admin` (full access) or `AssetManagement_Viewer` (read-only) to your user.
-2. Open the URL of the `asset-management` application (the approuter), e.g. from `cf apps`. You land on the entry page with tiles for all apps. Each app is also reachable directly:
-   - `/assetmanagementassets/index.html`
-   - `/assetmanagementemployee/index.html`
-   - `/assetmanagementmanager/index.html`
-   - `/assetmanagementdepartment/index.html`
+1. **Assign role collections** in the BTP cockpit (Security → Role Collections): `AssetManagement_Admin`, `AssetManagement_Manager` or `AssetManagement_Employee`.
+2. **Register users.** The sample data contains `admin@company.com`, `vijay.kumar@company.com` and others. Log in with an Admin user and, in *Admin Dashboard → Settings & Permissions → Users*, create one entry per login: user ID = the e-mail address you log in with, plus role and employee record. Admins don't need a `Users` entry, only the role collection. Managers and employees need one so that their dashboard knows which employee record belongs to them.
+3. Open the URL of the `asset-management` app (the approuter). The entry page shows the dashboards you may open. Direct URLs:
+   - `/assetmanagementdashboard/index.html#/admin/overview`
+   - `/assetmanagementdashboard/index.html#/manager/overview`
+   - `/assetmanagementdashboard/index.html#/employee/overview`
 
 To remove everything: `cf undeploy asset-management --delete-services --delete-service-keys`
 
-> The CSV files in `db/data` are sample data. The HDI deployer resets those rows on every deployment. Remove the files (or the CSV rows) before productive use.
+> The CSV files in `db/data` are sample data, and the HDI deployer resets those rows on every deployment. Remove the files (or the rows) before productive use.
 
 ## Local development (against SAP HANA Cloud)
 
-The project uses SAP HANA in all profiles, with no SQLite. After the first deployment, bind the local project to the HDI container and run in the `hybrid` profile:
+The project uses SAP HANA in all profiles. After the first deployment, bind the local project to the HDI container:
 
 ```bash
 npm ci
-cds bind -2 asset-management-db     # binds to the HDI container created by cf deploy
-npm run watch                       # = cds watch --profile hybrid
+cds bind -2 asset-management-db
+npm run watch              # cds watch --profile hybrid
 ```
 
-Then open <http://localhost:4004>. Locally the mocked users are `admin` / `admin` (AssetAdmin) and `viewer` / `viewer` (AssetViewer).
-The test requests in `srv/req.http` exercise all actions.
+Open <http://localhost:4004/launchpad/index.html> or <http://localhost:4004/dashboard/index.html>. Mocked users (user / password):
 
-To deploy schema changes to the HDI container from BAS without a full MTA deployment: `cds deploy --to hana:asset-management-db`.
+| User | Password | Roles |
+|------|----------|-------|
+| `admin@company.com` | `admin` | Admin |
+| `vijay.kumar@company.com` | `vijay` | Manager + Employee (IT) |
+| `rahul.kumar@company.com` | `rahul` | Manager + Employee (HR) |
+| `priya.sharma@company.com` | `priya` | Employee |
+| `arjun.reddy@company.com` | `arjun` | Employee |
+| `meera.iyer@company.com` | `meera` | Employee |
 
-## Roles
-
-| Role collection | Role template | Access |
-|-----------------|---------------|--------|
-| `AssetManagement_Admin` | `AssetAdmin` | Read, create, edit, delete, all actions |
-| `AssetManagement_Viewer` | `AssetViewer` | Read-only |
+`srv/req.http` contains example requests for all services.

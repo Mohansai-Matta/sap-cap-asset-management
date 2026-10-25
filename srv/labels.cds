@@ -14,7 +14,17 @@ annotate db.Employees with @title: '{i18n>Employee}' {
     email       @title: '{i18n>Email}';
     phone       @title: '{i18n>Phone}';
     location    @title: '{i18n>Location}';
+    designation @title: '{i18n>Designation}';
     status      @title: '{i18n>Status}';
+    manager     @title: '{i18n>Manager}'
+                @Common.Text: manager.full_name  @Common.TextArrangement: #TextOnly
+                @Common.ValueList: {
+                    CollectionPath: 'ManagerSrv',
+                    Parameters    : [
+                        { $Type: 'Common.ValueListParameterInOut', LocalDataProperty: manager_manager_id, ValueListProperty: 'manager_id' },
+                        { $Type: 'Common.ValueListParameterDisplayOnly', ValueListProperty: 'full_name' }
+                    ]
+                };
     department  @title: '{i18n>Department}'
                 @Common.Text: department.name  @Common.TextArrangement: #TextOnly
                 @Common.ValueList: {
@@ -32,6 +42,7 @@ annotate db.Managers with @title: '{i18n>Manager}' {
     full_name  @title: '{i18n>FullName}';
     email      @title: '{i18n>Email}';
     phone      @title: '{i18n>Phone}';
+    active     @title: '{i18n>Active}';
     employee   @title: '{i18n>Employee}'
                @Common.Text: employee.full_name  @Common.TextArrangement: #TextOnly
                @Common.ValueList: {
@@ -72,6 +83,9 @@ annotate db.Vendors with @title: '{i18n>Vendor}' {
 annotate db.Assets with @title: '{i18n>Asset}' {
     asset_id                @title: '{i18n>AssetID}' @UI.Hidden;
     asset_tag               @title: '{i18n>AssetTag}';
+    name                    @title: '{i18n>AssetName}';
+    condition               @title: '{i18n>Condition}';
+    location                @title: '{i18n>Location}';
     serial_number           @title: '{i18n>SerialNumber}';
     model                   @title: '{i18n>Model}';
     purchase_date           @title: '{i18n>PurchaseDate}';
@@ -121,7 +135,7 @@ annotate db.Assets with @title: '{i18n>Asset}' {
                             };
 };
 
-annotate db.OwnershipLedgers with @title: '{i18n>OwnershipLedger}' {
+annotate db.AssetAssignmentHistory with @title: '{i18n>OwnershipLedger}' {
     ledger_id       @title: '{i18n>LedgerID}' @UI.Hidden;
     action          @title: '{i18n>Action}';
     transition_date @title: '{i18n>TransitionDate}';
@@ -203,3 +217,47 @@ annotate db.ArchiveRecords with @title: '{i18n>ArchiveRecord}' {
                          ]
                      };
 };
+
+annotate db.Roles with @title: '{i18n>Role}' {
+    code        @title: '{i18n>RoleCode}';
+    name        @title: '{i18n>RoleName}';
+    description @title: '{i18n>Description}';
+};
+
+annotate db.Users with @title: '{i18n>User}' {
+    user_id   @title: '{i18n>UserID}';
+    full_name @title: '{i18n>FullName}';
+    email     @title: '{i18n>Email}';
+    role      @title: '{i18n>Role}';
+    employee  @title: '{i18n>Employee}';
+    active    @title: '{i18n>Active}';
+};
+
+annotate db.AssetOwnerships with @title: '{i18n>AssetOwnership}' {
+    ownership_id         @title: '{i18n>OwnershipID}' @UI.Hidden;
+    asset                @title: '{i18n>Asset}';
+    owner                @title: '{i18n>Owner}';
+    start_date           @title: '{i18n>StartDate}';
+    end_date             @title: '{i18n>EndDate}';
+    expected_return_date @title: '{i18n>ExpectedReturnDate}';
+    is_current           @title: '{i18n>IsCurrent}';
+    notes                @title: '{i18n>Notes}';
+};
+
+annotate db.AssetRequests with @title: '{i18n>AssetRequest}' {
+    request_id    @title: '{i18n>RequestID}' @UI.Hidden;
+    type          @title: '{i18n>RequestType}';
+    requested_by  @title: '{i18n>RequestedBy}';
+    asset         @title: '{i18n>Asset}';
+    category      @title: '{i18n>AssetCategory}';
+    issue_type    @title: '{i18n>IssueType}';
+    reason        @title: '{i18n>Reason}';
+    needed_by     @title: '{i18n>NeededBy}';
+    status        @title: '{i18n>Status}';
+    decided_by    @title: '{i18n>DecidedBy}';
+    decided_at    @title: '{i18n>DecidedAt}';
+    decision_note @title: '{i18n>DecisionNote}';
+};
+
+annotate db.Notifications with @title: '{i18n>Notification}';
+annotate db.AuditLogs with @title: '{i18n>AuditLog}';

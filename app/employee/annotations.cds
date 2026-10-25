@@ -27,7 +27,9 @@ annotate service.EmployeeSrv with @(
             { Value: email },
             { Value: phone },
             { Value: location },
+            { Value: designation },
             { Value: department_dept_id },
+            { Value: manager_manager_id },
             { Value: status }
         ]
     },

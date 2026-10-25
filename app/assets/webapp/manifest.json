@@ -160,14 +160,6 @@
               "editableHeaderContent": false,
               "contextPath": "/AssetSrv",
               "controlConfiguration": {
-                "ownership_history/@com.sap.vocabularies.UI.v1.LineItem": {
-                  "tableSettings": {
-                    "type": "ResponsiveTable",
-                    "creationMode": {
-                      "name": "Inline"
-                    }
-                  }
-                },
                 "maintenance_records/@com.sap.vocabularies.UI.v1.LineItem": {
                   "tableSettings": {
                     "type": "ResponsiveTable",

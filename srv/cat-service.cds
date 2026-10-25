@@ -2,13 +2,11 @@ using { asset.management as db } from '../db/schema';
 using { asset.management.common as common } from '../db/common';
 
 /**
- * Asset management service.
- * - AssetViewer: read-only access
- * - AssetAdmin : full access incl. all actions
- * Role templates / role collections are defined in xs-security.json.
+ * Service of the SAP Fiori elements apps (Assets, Employees, Managers, Departments)
+ * and of the CRUD actions. Administrators only - see xs-security.json.
  */
 @path    : '/odata/v4/catalog'
-@requires: ['AssetViewer', 'AssetAdmin']
+@requires: 'Admin'
 service CatalogService {
 
     @odata.draft.enabled
@@ -25,7 +23,7 @@ service CatalogService {
 
     entity AssetCategorySrv     as projection on db.AssetCategories;
     entity VendorSrv            as projection on db.Vendors;
-    entity OwnershipLedgerSrv   as projection on db.OwnershipLedgers;
+    entity OwnershipLedgerSrv   as projection on db.AssetAssignmentHistory;
     entity MaintenanceRecordSrv as projection on db.MaintenanceRecords;
     entity ArchiveRecordSrv     as projection on db.ArchiveRecords;
 
@@ -56,7 +54,9 @@ action CreateEmployee(
     phone       : String(20),
     location    : String(100),
     status      : String(30),
-    dept_id     : common.Identifier
+    dept_id     : common.Identifier,
+    designation : String(100),
+    manager_id  : common.Identifier
 ) returns array of EmployeeSrv;
 
 action UpdateEmployee(
@@ -66,7 +66,9 @@ action UpdateEmployee(
     phone       : String(20),
     location    : String(100),
     status      : String(30),
-    dept_id     : common.Identifier
+    dept_id     : common.Identifier,
+    designation : String(100),
+    manager_id  : common.Identifier
 ) returns String;
 
 action DeleteEmployee(
@@ -125,6 +127,7 @@ action DeleteVendor(
 action CreateAsset(
     asset_id                : common.Identifier,
     asset_tag               : String(50),
+    name                    : String(100),
     serial_number           : String(100),
     category_id             : common.Identifier,
     vendor_id               : common.Identifier,
@@ -136,12 +139,15 @@ action CreateAsset(
     warranty_expiry         : Date,
     first_distribution_date : Date,
     status                  : String(30),
-    employee_id             : common.Identifier
+    employee_id             : common.Identifier,
+    condition               : String(20),
+    location                : String(100)
 ) returns array of AssetSrv;
 
 action UpdateAsset(
     asset_id                : common.Identifier,
     asset_tag               : String(50),
+    name                    : String(100),
     serial_number           : String(100),
     category_id             : common.Identifier,
     vendor_id               : common.Identifier,
@@ -153,7 +159,9 @@ action UpdateAsset(
     warranty_expiry         : Date,
     first_distribution_date : Date,
     status                  : String(30),
-    employee_id             : common.Identifier
+    employee_id             : common.Identifier,
+    condition               : String(20),
+    location                : String(100)
 ) returns String;
 
 action DeleteAsset(
@@ -210,3 +218,8 @@ action DeleteOwnershipLedger(
 ) returns String;
 
 }
+
+// the holder of an asset is changed through the ownership logic only
+annotate CatalogService.AssetSrv with {
+    current_holder @readonly;
+};

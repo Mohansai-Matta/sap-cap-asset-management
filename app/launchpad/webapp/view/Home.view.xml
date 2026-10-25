@@ -6,8 +6,36 @@
     displayBlock="true"
     height="100%">
     <App id="app">
-        <Page title="{i18n>appTitle}" class="sapUiContentPadding">
+        <Page title="{i18n>appTitle}" class="sapUiContentPadding" busy="{= !${user>/loaded} }">
+            <headerContent>
+                <Text text="{user>/full_name}" />
+            </headerContent>
+            <MessageStrip text="{user>/message}" type="Warning" showIcon="true" visible="{= !!${user>/message} }" class="sapUiSmallMarginBottom" />
+
+            <Title text="{i18n>dashboardsGroup}" level="H2" class="sapUiTinyMarginBegin sapUiSmallMarginTop" visible="{= ${user>/is_admin} || ${user>/is_manager} || ${user>/is_employee} }" />
             <FlexBox wrap="Wrap" alignItems="Start">
+                <GenericTile class="sapUiTinyMarginBegin sapUiTinyMarginTop" header="{i18n>adminDashboardTitle}" subheader="{i18n>adminDashboardSubtitle}"
+                    press=".onOpenApp" app:target="dashboard" app:hash="#/admin/overview" visible="{= !!${user>/is_admin} }">
+                    <TileContent>
+                        <ImageContent src="sap-icon://shield" />
+                    </TileContent>
+                </GenericTile>
+                <GenericTile class="sapUiTinyMarginBegin sapUiTinyMarginTop" header="{i18n>managerDashboardTitle}" subheader="{i18n>managerDashboardSubtitle}"
+                    press=".onOpenApp" app:target="dashboard" app:hash="#/manager/overview" visible="{= !!${user>/is_manager} }">
+                    <TileContent>
+                        <ImageContent src="sap-icon://manager" />
+                    </TileContent>
+                </GenericTile>
+                <GenericTile class="sapUiTinyMarginBegin sapUiTinyMarginTop" header="{i18n>employeeDashboardTitle}" subheader="{i18n>employeeDashboardSubtitle}"
+                    press=".onOpenApp" app:target="dashboard" app:hash="#/employee/overview" visible="{= !!${user>/is_employee} }">
+                    <TileContent>
+                        <ImageContent src="sap-icon://employee" />
+                    </TileContent>
+                </GenericTile>
+            </FlexBox>
+
+            <Title text="{i18n>fioriAppsGroup}" level="H2" class="sapUiTinyMarginBegin sapUiMediumMarginTop" visible="{= !!${user>/is_admin} }" />
+            <FlexBox wrap="Wrap" alignItems="Start" visible="{= !!${user>/is_admin} }">
                 <GenericTile class="sapUiTinyMarginBegin sapUiTinyMarginTop" header="{i18n>assetsTitle}" subheader="{i18n>assetsSubtitle}" press=".onOpenApp" app:target="assets">
                     <TileContent>
                         <ImageContent src="sap-icon://laptop" />

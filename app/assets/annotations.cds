@@ -5,7 +5,7 @@ annotate service.AssetSrv with @(
         TypeName      : '{i18n>Asset}',
         TypeNamePlural: '{i18n>Assets}',
         Title         : { Value: asset_tag },
-        Description   : { Value: model }
+        Description   : { Value: name }
     },
     UI.SelectionFields     : [
         asset_tag,
@@ -16,6 +16,7 @@ annotate service.AssetSrv with @(
     ],
     UI.LineItem            : [
         { Value: asset_tag },
+        { Value: name },
         { Value: serial_number },
         { Value: model },
         { Value: category_asset_category_id },
@@ -36,8 +37,11 @@ annotate service.AssetSrv with @(
     UI.FieldGroup #General : {
         Data: [
             { Value: asset_tag },
+            { Value: name },
             { Value: serial_number },
             { Value: model },
+            { Value: condition },
+            { Value: location },
             { Value: category_asset_category_id },
             { Value: status }
         ]

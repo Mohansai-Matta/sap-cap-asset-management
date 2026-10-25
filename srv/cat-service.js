@@ -1,4 +1,7 @@
 const cds = require('@sap/cds');
+const { dependentsOf, assertAssetDeletable, deleteAssetChildren } = require('./lib/common');
+const ownership = require('./lib/ownership');
+const { registerAudit } = require('./lib/audit');
 
 module.exports = class CatalogService extends cds.ApplicationService {
 
@@ -11,7 +14,7 @@ module.exports = class CatalogService extends cds.ApplicationService {
             Vendors,
             Assets,
             AssetCategories,
-            OwnershipLedgers,
+            AssetAssignmentHistory,
             MaintenanceRecords,
             ArchiveRecords
         } = cds.entities('asset.management');
@@ -88,7 +91,7 @@ module.exports = class CatalogService extends cds.ApplicationService {
          * Registers Create<name>, Update<name> and Delete<name> actions
          * for one entity in a uniform way.
          */
-        const registerCrudActions = (name, { entity, key, label, refs = [], toRow, dependents = [], validate, afterCreate, beforeDelete }) => {
+        const registerCrudActions = (name, { entity, key, label, refs = [], toRow, dependents = [], validate, afterCreate, beforeDelete, create }) => {
 
             const checkRefs = async (req) => {
                 for (const ref of refs) {
@@ -96,7 +99,7 @@ module.exports = class CatalogService extends cds.ApplicationService {
                 }
             };
 
-            this.on(`Create${name}`, async (req) => {
+            this.on(`Create${name}`, create || (async (req) => {
                 const id = req.data[key] || cds.utils.uuid();
 
                 const existing = await SELECT.one.from(entity).columns(key).where({ [key]: id });
@@ -111,7 +114,7 @@ module.exports = class CatalogService extends cds.ApplicationService {
                 if (afterCreate) await afterCreate(req, row);
 
                 return SELECT.from(entity).where({ [key]: id });
-            });
+            }));
 
             this.on(`Update${name}`, async (req) => {
                 const id = req.data[key];
@@ -183,10 +186,7 @@ module.exports = class CatalogService extends cds.ApplicationService {
                 name: d.name,
                 cost_center: d.cost_center
             }),
-            dependents: [
-                { entity: Employees, fk: 'department_dept_id', what: 'employees' },
-                { entity: Managers, fk: 'department_dept_id', what: 'managers' }
-            ]
+            dependents: dependentsOf('Departments')
         });
 
         /* =========================
@@ -198,20 +198,20 @@ module.exports = class CatalogService extends cds.ApplicationService {
             key: 'employee_id',
             label: 'Employee',
             refs: [
-                { param: 'dept_id', entity: Departments, key: 'dept_id', label: 'Department' }
+                { param: 'dept_id', entity: Departments, key: 'dept_id', label: 'Department' },
+                { param: 'manager_id', entity: Managers, key: 'manager_id', label: 'Manager' }
             ],
             toRow: (d) => ({
                 full_name: d.full_name,
                 email: d.email,
                 phone: d.phone,
                 location: d.location,
+                designation: d.designation,
                 status: d.status,
-                department_dept_id: d.dept_id
+                department_dept_id: d.dept_id,
+                manager_manager_id: d.manager_id
             }),
-            dependents: [
-                { entity: Assets, fk: 'current_holder_employee_id', what: 'assets currently assigned to the employee' },
-                { entity: Managers, fk: 'employee_employee_id', what: 'a manager record' }
-            ]
+            dependents: dependentsOf('Employees')
         });
 
         /* =========================
@@ -233,10 +233,7 @@ module.exports = class CatalogService extends cds.ApplicationService {
                 employee_employee_id: d.employee_id,
                 department_dept_id: d.dept_id
             }),
-            dependents: [
-                { entity: Vendors, fk: 'manager_manager_id', what: 'vendors' },
-                { entity: Assets, fk: 'manager_manager_id', what: 'assets' }
-            ]
+            dependents: dependentsOf('Managers')
         });
 
         /* =========================
@@ -255,10 +252,7 @@ module.exports = class CatalogService extends cds.ApplicationService {
                 name: d.name,
                 email: d.email
             }),
-            dependents: [
-                { entity: Assets, fk: 'vendor_vendor_id', what: 'assets' },
-                { entity: MaintenanceRecords, fk: 'service_vendor_vendor_id', what: 'maintenance records' }
-            ]
+            dependents: dependentsOf('Vendors')
         });
 
         /* =========================
@@ -273,16 +267,14 @@ module.exports = class CatalogService extends cds.ApplicationService {
                 name: d.name,
                 lifespan_months: d.lifespan_months
             }),
-            dependents: [
-                { entity: Assets, fk: 'category_asset_category_id', what: 'assets' }
-            ]
+            dependents: dependentsOf('AssetCategories')
         });
 
         /* =========================
            Asset Actions
         ========================= */
 
-        const asset = registerCrudActions('Asset', {
+        registerCrudActions('Asset', {
             entity: Assets,
             key: 'asset_id',
             label: 'Asset',
@@ -294,6 +286,7 @@ module.exports = class CatalogService extends cds.ApplicationService {
             ],
             toRow: (d) => ({
                 asset_tag: d.asset_tag,
+                name: d.name,
                 serial_number: d.serial_number,
                 category_asset_category_id: d.category_id,
                 vendor_vendor_id: d.vendor_id,
@@ -304,18 +297,26 @@ module.exports = class CatalogService extends cds.ApplicationService {
                 currency_code: d.currency,
                 warranty_expiry: d.warranty_expiry,
                 first_distribution_date: d.first_distribution_date,
-                status: d.status ?? (d.employee_id ? 'Assigned' : undefined),
-                current_holder_employee_id: d.employee_id
+                condition: d.condition,
+                location: d.location,
+                // 'Assigned' (and the holder) are set by the ownership logic only - see afterCreate
+                status: d.status === 'Assigned' ? undefined : d.status
             }),
             validate: async (req, row) => {
+                if (req.event === 'UpdateAsset' && req.data.employee_id && req.data.employee_id !== row.current_holder_employee_id) {
+                    req.reject(400, 'Use CreateOwnershipLedger (Assign / Transfer / Return) to change the holder of an asset');
+                }
                 validateAsset(req, row);
                 await assertUniqueAssetTag(req, row);
             },
+            afterCreate: async (req, row) => {
+                if (req.data.employee_id) {
+                    await ownership.assign(req, { asset_id: row.asset_id, employee_id: req.data.employee_id, start_date: req.data.first_distribution_date });
+                }
+            },
             beforeDelete: async (req, id) => {
-                // remove composition children together with the asset
-                await DELETE.from(OwnershipLedgers).where({ asset_asset_id: id });
-                await DELETE.from(MaintenanceRecords).where({ asset_asset_id: id });
-                await DELETE.from(ArchiveRecords).where({ asset_asset_id: id });
+                await assertAssetDeletable(req, id);
+                await deleteAssetChildren(id);
             }
         });
 
@@ -323,17 +324,25 @@ module.exports = class CatalogService extends cds.ApplicationService {
            Ownership Ledger Actions
         ========================= */
 
-        // Keeps the asset's current holder and status in sync with the ledger
-        const applyOwnershipChange = async (row) => {
-            if (!row.asset_asset_id || !row.action) return;
-            const changes = row.action === 'Return'
-                ? { current_holder_employee_id: null, status: 'InStock' }
-                : { current_holder_employee_id: row.to_employee_employee_id, status: 'Assigned' };
-            await UPDATE(Assets).set(changes).where({ asset_id: row.asset_asset_id });
+        // New ledger entries go through the ownership logic, which keeps asset, ownership and history in sync
+        const createLedgerEntry = async (req) => {
+            const d = req.data;
+            const recorded = { notes: d.notes, recorded_by: d.manager_id };
+            if (d.action === 'Assign') {
+                await ownership.assign(req, { ...recorded, asset_id: d.asset_id, employee_id: d.to_employee_id, start_date: d.transition_date });
+            } else if (d.action === 'Transfer') {
+                await ownership.transfer(req, { ...recorded, asset_id: d.asset_id, to_employee_id: d.to_employee_id, transfer_date: d.transition_date });
+            } else if (d.action === 'Return') {
+                await ownership.returnAsset(req, { ...recorded, asset_id: d.asset_id, return_date: d.transition_date });
+            } else {
+                req.reject(400, "Parameter 'action' must be one of: Assign, Transfer, Return");
+            }
+            return SELECT.from(AssetAssignmentHistory).where({ asset_asset_id: d.asset_id })
+                .orderBy('createdAt desc', 'transition_date desc').limit(1);
         };
 
         registerCrudActions('OwnershipLedger', {
-            entity: OwnershipLedgers,
+            entity: AssetAssignmentHistory,
             key: 'ledger_id',
             label: 'Ownership ledger entry',
             refs: [
@@ -352,12 +361,7 @@ module.exports = class CatalogService extends cds.ApplicationService {
                 notes: d.notes,
                 created_at: d.created_at
             }),
-            validate: (req, row) => {
-                if (row.action && row.action !== 'Return' && !row.to_employee_employee_id) {
-                    req.reject(400, `Parameter 'to_employee_id' is required for action '${row.action}'`);
-                }
-            },
-            afterCreate: (req, row) => applyOwnershipChange(row)
+            create: createLedgerEntry
         });
 
         /* =========================
@@ -368,15 +372,25 @@ module.exports = class CatalogService extends cds.ApplicationService {
         for (const [srvEntity, crud] of [
             [DepartmentSrv, department],
             [EmployeeSrv, employee],
-            [ManagerSrv, manager],
-            [AssetSrv, asset]
+            [ManagerSrv, manager]
         ]) {
             this.before('DELETE', srvEntity, (req) =>
                 assertNoDependents(req, crud.dependents, req.data[crud.key], crud.label)
             );
         }
 
+        this.before('DELETE', AssetSrv, async (req) => {
+            await assertAssetDeletable(req, req.data.asset_id);
+            await deleteAssetChildren(req.data.asset_id);
+        });
+
         this.before(['CREATE', 'UPDATE'], AssetSrv, async (req) => {
+            const before = req.event === 'UPDATE'
+                ? await SELECT.one.from(Assets).columns('current_holder_employee_id').where({ asset_id: req.data.asset_id })
+                : null;
+            if (req.data.status === 'Assigned' && !before?.current_holder_employee_id) {
+                req.reject(400, "Status 'Assigned' is set automatically when the asset is assigned to an employee");
+            }
             validateAsset(req, req.data);
             await assertUniqueAssetTag(req, req.data);
             for (const m of req.data.maintenance_records ?? []) validateMaintenance(req, m);
@@ -384,6 +398,7 @@ module.exports = class CatalogService extends cds.ApplicationService {
 
         this.before(['CREATE', 'UPDATE'], 'MaintenanceRecordSrv', (req) => validateMaintenance(req, req.data));
 
+        registerAudit(this);
         return super.init();
     }
 };

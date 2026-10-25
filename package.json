@@ -1,7 +1,7 @@
 {
   "name": "asset-management",
   "version": "1.0.0",
-  "description": "Asset Management - SAP CAP application on SAP HANA Cloud with SAP Fiori elements (SAPUI5) apps",
+  "description": "Asset Management - SAP CAP on SAP HANA Cloud with SAPUI5 / SAP Fiori dashboards for admins, managers and employees",
   "license": "ISC",
   "private": true,
   "engines": {
@@ -17,7 +17,8 @@
     "build": "cds build --production",
     "build:mta": "mbt build -t mta_archives --mtar asset-management.mtar",
     "deploy": "cf deploy mta_archives/asset-management.mtar --retries 1",
-    "undeploy": "cf undeploy asset-management --delete-services --delete-service-keys --delete-service-brokers"
+    "undeploy": "cf undeploy asset-management --delete-services --delete-service-keys --delete-service-brokers",
+    "watch-dashboard": "cds watch --profile hybrid --open dashboard/index.html?sap-ui-xx-viewCache=false --livereload false"
   },
   "dependencies": {
     "@cap-js/hana": "^3.1.2",
@@ -47,37 +48,89 @@
         "[development]": {
           "kind": "mocked",
           "users": {
-            "admin": {
+            "admin@company.com": {
               "password": "admin",
               "roles": [
-                "AssetAdmin",
-                "AssetViewer"
+                "Admin"
               ]
             },
-            "viewer": {
-              "password": "viewer",
+            "vijay.kumar@company.com": {
+              "password": "vijay",
               "roles": [
-                "AssetViewer"
+                "Manager",
+                "Employee"
               ]
-            }
+            },
+            "rahul.kumar@company.com": {
+              "password": "rahul",
+              "roles": [
+                "Manager",
+                "Employee"
+              ]
+            },
+            "priya.sharma@company.com": {
+              "password": "priya",
+              "roles": [
+                "Employee"
+              ]
+            },
+            "arjun.reddy@company.com": {
+              "password": "arjun",
+              "roles": [
+                "Employee"
+              ]
+            },
+            "meera.iyer@company.com": {
+              "password": "meera",
+              "roles": [
+                "Employee"
+              ]
+            },
+            "*": false
           }
         },
         "[hybrid]": {
           "kind": "mocked",
           "users": {
-            "admin": {
+            "admin@company.com": {
               "password": "admin",
               "roles": [
-                "AssetAdmin",
-                "AssetViewer"
+                "Admin"
               ]
             },
-            "viewer": {
-              "password": "viewer",
+            "vijay.kumar@company.com": {
+              "password": "vijay",
               "roles": [
-                "AssetViewer"
+                "Manager",
+                "Employee"
               ]
-            }
+            },
+            "rahul.kumar@company.com": {
+              "password": "rahul",
+              "roles": [
+                "Manager",
+                "Employee"
+              ]
+            },
+            "priya.sharma@company.com": {
+              "password": "priya",
+              "roles": [
+                "Employee"
+              ]
+            },
+            "arjun.reddy@company.com": {
+              "password": "arjun",
+              "roles": [
+                "Employee"
+              ]
+            },
+            "meera.iyer@company.com": {
+              "password": "meera",
+              "roles": [
+                "Employee"
+              ]
+            },
+            "*": false
           }
         },
         "[production]": {

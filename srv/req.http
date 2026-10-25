@@ -1,10 +1,83 @@
 # Local test requests (REST Client extension in SAP Business Application Studio / VS Code)
 # Start the server first:  npm run watch   (cds watch --profile hybrid)
-# Mocked users: admin/admin (AssetAdmin), viewer/viewer (AssetViewer)
+# Mocked users (see package.json): admin@company.com/admin (Admin), vijay.kumar@company.com/vijay (Manager),
+# priya.sharma@company.com/priya (Employee)
 
 @server = http://localhost:4004
 @catalog = {{server}}/odata/v4/catalog
-@auth = Basic admin:admin
+@admin = {{server}}/odata/v4/admin
+@manager = {{server}}/odata/v4/manager
+@employee = {{server}}/odata/v4/employee
+@auth = Basic admin@company.com:admin
+@managerAuth = Basic vijay.kumar@company.com:vijay
+@employeeAuth = Basic priya.sharma@company.com:priya
+
+### Who am I (any role)
+GET {{server}}/odata/v4/user/me()
+Authorization: {{employeeAuth}}
+
+### Admin: key figures
+GET {{admin}}/getStats()
+Authorization: {{auth}}
+
+### Admin: report
+GET {{admin}}/getReport(report='allocationByEmployee')
+Authorization: {{auth}}
+
+### Employee: request a new asset
+POST {{employee}}/requestAsset
+Authorization: {{employeeAuth}}
+Content-Type: application/json
+
+{
+    "category_id": "ac222222-2222-4222-8222-222222222222",
+    "reason": "Second monitor",
+    "needed_by": "2026-12-01"
+}
+
+### Employee: report an issue
+POST {{employee}}/reportIssue
+Authorization: {{employeeAuth}}
+Content-Type: application/json
+
+{
+    "asset_id": "f1111111-1111-4111-8111-111111111111",
+    "issue_type": "Malfunction",
+    "description": "Battery does not charge"
+}
+
+### Manager: team requests
+GET {{manager}}/AssetRequests?$filter=status eq 'Pending'
+Authorization: {{managerAuth}}
+
+### Manager: approve a request (New requests need an available asset)
+POST {{manager}}/approveRequest
+Authorization: {{managerAuth}}
+Content-Type: application/json
+
+{
+    "request_id": "9a111111-1111-4111-8111-111111111111",
+    "asset_id": "f2222222-2222-4222-8222-222222222222",
+    "note": "Approved"
+}
+
+### Manager: transfer an asset within the team
+POST {{manager}}/transferAsset
+Authorization: {{managerAuth}}
+Content-Type: application/json
+
+{
+    "asset_id": "f1111111-1111-4111-8111-111111111111",
+    "to_employee_id": "e5555555-5555-4555-8555-555555555555",
+    "notes": "Handover"
+}
+
+### Employee: must not access the manager service (expect 403)
+GET {{manager}}/Employees
+Authorization: {{employeeAuth}}
+
+### ---------------------------------------------------------------
+### CatalogService (SAP Fiori elements apps and CRUD actions, admins)
 
 ### Read departments
 GET {{catalog}}/DepartmentSrv?$filter=IsActiveEntity eq true
@@ -52,7 +125,7 @@ Authorization: {{auth}}
 Content-Type: application/json
 
 {
-    "manager_id": "a2222222-2222-4222-8222-222222222222",
+    "manager_id": "a3333333-3333-4333-8333-333333333333",
     "full_name": "Anita Rao",
     "email": "anita.rao@company.com",
     "phone": "9876543233",
@@ -66,8 +139,8 @@ Authorization: {{auth}}
 Content-Type: application/json
 
 {
-    "asset_category_id": "ac333333-3333-4333-8333-333333333333",
-    "name": "Mobile Phone",
+    "asset_category_id": "ac444444-4444-4444-8444-444444444444",
+    "name": "Tablet",
     "lifespan_months": 36
 }
 
@@ -77,10 +150,10 @@ Authorization: {{auth}}
 Content-Type: application/json
 
 {
-    "vendor_id": "b2222222-2222-4222-8222-222222222222",
-    "manager_id": "a2222222-2222-4222-8222-222222222222",
-    "name": "Lenovo",
-    "email": "support@lenovo.com"
+    "vendor_id": "b3333333-3333-4333-8333-333333333333",
+    "manager_id": "a3333333-3333-4333-8333-333333333333",
+    "name": "HP",
+    "email": "support@hp.com"
 }
 
 ### Create asset
@@ -89,18 +162,19 @@ Authorization: {{auth}}
 Content-Type: application/json
 
 {
-    "asset_id": "f3333333-3333-4333-8333-333333333333",
-    "asset_tag": "AST-0003",
-    "serial_number": "SN-LN-T14-003",
+    "asset_id": "f6666666-6666-4666-8666-666666666666",
+    "asset_tag": "AST-0006",
+    "serial_number": "SN-HP-840-006",
     "category_id": "ac111111-1111-4111-8111-111111111111",
-    "vendor_id": "b2222222-2222-4222-8222-222222222222",
-    "manager_id": "a2222222-2222-4222-8222-222222222222",
-    "model": "ThinkPad T14",
+    "vendor_id": "b3333333-3333-4333-8333-333333333333",
+    "manager_id": "a3333333-3333-4333-8333-333333333333",
+    "name": "HP EliteBook",
+    "model": "EliteBook 840",
     "purchase_date": "2026-06-01",
     "purchase_cost": 92000.00,
     "currency": "INR",
     "warranty_expiry": "2029-05-31",
-    "status": "InStock"
+    "status": "Available"
 }
 
 ### Assign asset (updates current holder + status of the asset)
@@ -109,23 +183,23 @@ Authorization: {{auth}}
 Content-Type: application/json
 
 {
-    "asset_id": "f3333333-3333-4333-8333-333333333333",
+    "asset_id": "f6666666-6666-4666-8666-666666666666",
     "to_employee_id": "e4444444-4444-4444-8444-444444444444",
     "action": "Assign",
     "transition_date": "2026-06-05",
-    "manager_id": "a2222222-2222-4222-8222-222222222222",
+    "manager_id": "a3333333-3333-4333-8333-333333333333",
     "notes": "New joiner laptop"
 }
 
 ### Read asset with history
-GET {{catalog}}/AssetSrv(asset_id=f3333333-3333-4333-8333-333333333333,IsActiveEntity=true)?$expand=ownership_history,current_holder
+GET {{catalog}}/AssetSrv(asset_id=f6666666-6666-4666-8666-666666666666,IsActiveEntity=true)?$expand=ownership_history,current_holder
 Authorization: {{auth}}
 
-### Viewer must not be able to change data (expect 403)
+### Employees must not be able to change data here (expect 403)
 POST {{catalog}}/DeleteAsset
-Authorization: Basic viewer:viewer
+Authorization: {{employeeAuth}}
 Content-Type: application/json
 
 {
-    "asset_id": "f3333333-3333-4333-8333-333333333333"
+    "asset_id": "f6666666-6666-4666-8666-666666666666"
 }
