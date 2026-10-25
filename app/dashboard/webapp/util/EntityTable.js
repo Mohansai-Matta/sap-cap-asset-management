@@ -22,6 +22,8 @@ sap.ui.define([
     "sap/m/MessageBox",
     "sap/m/MessageToast",
     "sap/m/Dialog",
+    "sap/m/ViewSettingsDialog",
+    "sap/m/ViewSettingsItem",
     "sap/m/Label",
     "sap/m/library",
     "sap/ui/core/Item",
@@ -34,7 +36,7 @@ sap.ui.define([
     "./api",
     "./FormDialog"
 ], function (Table, Column, ColumnListItem, Text, Title, Toolbar, OverflowToolbar, ToolbarSpacer, SearchField, Select, ComboBox,
-    Button, MenuButton, Menu, MenuItem, HBox, VBox, ObjectStatus, ObjectNumber, ObjectIdentifier, MessageBox, MessageToast, Dialog, Label,
+    Button, MenuButton, Menu, MenuItem, HBox, VBox, ObjectStatus, ObjectNumber, ObjectIdentifier, MessageBox, MessageToast, Dialog, ViewSettingsDialog, ViewSettingsItem, Label,
     mobileLibrary, Item, ListItem, Filter, FilterOperator, Sorter, SimpleForm, format, api, FormDialog) {
     "use strict";
 
@@ -303,6 +305,7 @@ sap.ui.define([
             text: a.text, icon: a.icon, type: a.type || ButtonType.Default,
             press: () => a.press(ctx, api_)
         })));
+        toolbar.addContent(new Button({ icon: "sap-icon://sort", tooltip: "Sort", press: () => openSort() }));
         toolbar.addContent(new Button({
             icon: "sap-icon://excel-attachment", tooltip: "Export to spreadsheet",
             press: () => exportData()
@@ -400,6 +403,27 @@ sap.ui.define([
             dialog.open();
         }
 
+        let sortDialog;
+        function openSort() {
+            if (!sortDialog) {
+                const [initialPath, initialDir] = (cfg.orderby || cfg.columns[0].path).split(/\s+/);
+                sortDialog = new ViewSettingsDialog({
+                    title: "Sort " + cfg.title,
+                    sortDescending: (initialDir || "").toLowerCase() === "desc",
+                    sortItems: cfg.columns.map((col) => new ViewSettingsItem({
+                        key: col.path, text: col.label, selected: col.path === initialPath
+                    })),
+                    confirm: function (event) {
+                        const item = event.getParameter("sortItem");
+                        if (!item) return;
+                        table.getBinding("items").sort(new Sorter(item.getKey(), event.getParameter("sortDescending")));
+                    }
+                });
+                if (ctx.owner) ctx.owner.addDependent(sortDialog);
+            }
+            sortDialog.open();
+        }
+
         async function exportData() {
             const binding = table.getBinding("items");
             try {
@@ -437,6 +461,11 @@ sap.ui.define([
         }
 
         const box = new VBox({ items: [table], width: "100%" });
+        const destroyBox = box.destroy.bind(box);
+        box.destroy = function () {
+            if (sortDialog) sortDialog.destroy();
+            return destroyBox.apply(null, arguments);
+        };
         box.data("entityTable", api_);
         api_.control = box;
         return api_;
