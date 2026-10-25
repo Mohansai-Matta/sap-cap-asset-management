@@ -21,7 +21,7 @@ modules:
     path: gen/srv
     parameters:
       instances: 1
-      memory: 256M
+      memory: 512M
       disk-quota: 1024M
       buildpack: nodejs_buildpack
     build-parameters:
@@ -42,7 +42,8 @@ modules:
     path: gen/db
     parameters:
       buildpack: nodejs_buildpack
-      memory: 256M
+      # the deployer imports the tables and all CSV files (incl. currency texts) - 256M is not enough
+      memory: 1024M
       disk-quota: 1024M
     requires:
       - name: asset-management-db

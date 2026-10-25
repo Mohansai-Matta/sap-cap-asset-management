@@ -12,7 +12,7 @@
             </headerContent>
             <MessageStrip text="{user>/message}" type="Warning" showIcon="true" visible="{= !!${user>/message} }" class="sapUiSmallMarginBottom" />
 
-            <Title text="{i18n>dashboardsGroup}" level="H2" class="sapUiTinyMarginBegin sapUiSmallMarginTop" visible="{= ${user>/is_admin} || ${user>/is_manager} || ${user>/is_employee} }" />
+            <Title text="{i18n>dashboardsGroup}" level="H2" class="sapUiTinyMarginBegin sapUiSmallMarginTop" visible="{= !!(${user>/is_admin} || ${user>/is_manager} || ${user>/is_employee}) }" />
             <FlexBox wrap="Wrap" alignItems="Start">
                 <GenericTile class="sapUiTinyMarginBegin sapUiTinyMarginTop" header="{i18n>adminDashboardTitle}" subheader="{i18n>adminDashboardSubtitle}"
                     press=".onOpenApp" app:target="dashboard" app:hash="#/admin/overview" visible="{= !!${user>/is_admin} }">

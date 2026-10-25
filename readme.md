@@ -98,3 +98,12 @@ Open <http://localhost:4004/launchpad/index.html> or <http://localhost:4004/dash
 | `meera.iyer@company.com` | `meera` | Employee |
 
 `srv/req.http` contains example requests for all services.
+
+## Troubleshooting
+
+**"Could not load your user (503/500)" / "The database has not been updated for this version"**: the service runs against an HDI container that doesn't contain the current tables yet (for example `Users` or `AssetRequests`). This happens when you pull a new version but don't deploy the database:
+
+- Deployed app: run `mbt build` and `cf deploy mta_archives/asset-management_1.0.0.mtar` again, and check that the step *asset-management-db-deployer* finishes without errors. If it doesn't, look at `cf logs asset-management-db-deployer --recent`.
+- Local hybrid run in SAP Business Application Studio: `cds deploy --to hana` (uses the bound HDI container), then `npm run watch`.
+
+For any other error, the service log shows the details: `cf logs asset-management-srv --recent`.

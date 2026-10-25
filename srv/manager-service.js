@@ -1,4 +1,5 @@
 const cds = require('@sap/cds');
+const { isMissingTable, OUTDATED } = require('./lib/schema-check');
 const { db, inList, today, validateMaintenance } = require('./lib/common');
 const { requireManager, managerScope } = require('./lib/context');
 const ownership = require('./lib/ownership');
@@ -184,6 +185,15 @@ module.exports = class ManagerService extends cds.ApplicationService {
         });
 
         registerAudit(this);
+        // explain errors caused by an outdated database schema
+        this.on('error', (error) => {
+            if (isMissingTable(error)) {
+                error.message = OUTDATED;
+                error.code = 503;
+                error.status = 503;
+            }
+        });
+
         return super.init();
     }
 };

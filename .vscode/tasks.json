@@ -3,8 +3,9 @@
   "tasks": [
     {
       "type": "shell",
-      "label": "cds watch",
-      "command": "cds watch"
+      "label": "cds watch (hybrid - SAP HANA)",
+      "command": "cds watch --profile hybrid",
+      "problemMatcher": []
     }
   ]
 }

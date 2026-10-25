@@ -1,4 +1,5 @@
 const cds = require('@sap/cds');
+const { isMissingTable, OUTDATED } = require('./lib/schema-check');
 const { db, inList, today } = require('./lib/common');
 const { requireEmployee } = require('./lib/context');
 const requests = require('./lib/requests');
@@ -87,6 +88,15 @@ module.exports = class EmployeeService extends cds.ApplicationService {
                 overdueReturns: await count(AssetOwnerships, { owner_employee_id: id, is_current: true, expected_return_date: { '<': today() } }),
                 unreadNotifications: await count(N, { recipient_user_id: req.user.id, is_read: false })
             };
+        });
+
+        // explain errors caused by an outdated database schema
+        this.on('error', (error) => {
+            if (isMissingTable(error)) {
+                error.message = OUTDATED;
+                error.code = 503;
+                error.status = 503;
+            }
         });
 
         return super.init();

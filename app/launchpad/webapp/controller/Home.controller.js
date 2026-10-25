@@ -14,11 +14,15 @@ sap.ui.define(
                 this.getView().setModel(model, "user");
                 // show only the tiles the logged-in user may open
                 fetch("/odata/v4/user/me()", { headers: { Accept: "application/json" }, credentials: "same-origin" })
-                    .then((response) => {
-                        if (!response.ok) throw new Error(response.status === 401 || response.status === 403
-                            ? "You are not authorized to use Asset Management."
-                            : "Could not load your user (" + response.status + ").");
-                        return response.json();
+                    .then(async (response) => {
+                        if (response.ok) return response.json();
+                        if (response.status === 401 || response.status === 403) {
+                            throw new Error("You are not authorized to use Asset Management.");
+                        }
+                        // show the reason reported by the server
+                        const body = await response.json().catch(() => null);
+                        const reason = body && body.error && body.error.message;
+                        throw new Error("Could not load your user (" + response.status + ")" + (reason ? ": " + reason : "."));
                     })
                     .then((user) => {
                         const message = !user.is_admin && !user.is_manager && !user.is_employee
