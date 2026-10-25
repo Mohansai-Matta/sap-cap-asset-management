@@ -37,6 +37,9 @@ type UserInfo {
     email                : String(100);
     role                 : String(20);
     registered           : Boolean;
+    has_role             : Boolean;
+    roles                : String(100);
+    token_roles          : String(1000);
     active               : Boolean;
     is_admin             : Boolean;
     is_manager           : Boolean;

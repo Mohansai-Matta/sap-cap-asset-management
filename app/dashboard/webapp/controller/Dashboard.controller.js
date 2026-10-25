@@ -86,7 +86,8 @@ sap.ui.define([
                 this._role = null;
                 viewModel.setProperty("/nav", []);
                 this._showMessage("sapIllus-UnableToLoad", this._text("noAccessTitle"),
-                    user.registered === false ? this._text("notRegisteredText", [user.user_id]) : this._text("noDashboardAccess", [config.title]));
+                    !user.has_role ? this._text("noRoleText", [user.user_id, user.token_roles || "none"])
+                        : user.registered === false ? this._text("notRegisteredText", [user.user_id]) : this._text("noDashboardAccess", [config.title]));
                 this._buildSwitches(user, role);
                 return;
             }

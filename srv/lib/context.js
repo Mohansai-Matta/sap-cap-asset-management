@@ -12,7 +12,8 @@ const getContext = async () => {
     if (key && cache.has(key)) return cache.get(key);
     const { Users, Employees, Managers } = db();
     const userId = cds.context.user.id;
-    const user = await SELECT.one.from(Users).where({ user_id: userId });
+    // logins are compared case-insensitively (identity providers may send Name@Company.com)
+    const user = await SELECT.one.from(Users).where('lower(user_id) =', String(userId).toLowerCase());
     const employeeId = user?.active ? user.employee_employee_id : null;
     const employee = employeeId ? await SELECT.one.from(Employees).where({ employee_id: employeeId }) : null;
     const manager = employeeId ? await SELECT.one.from(Managers).where({ employee_employee_id: employeeId }) : null;
@@ -93,6 +94,12 @@ const me = async () => {
         email: ctx.user?.email || ctx.employee?.email,
         role: ctx.user?.role_code,
         registered: !!ctx.user,
+        has_role: ['Admin', 'Manager', 'Employee'].some((r) => user.is(r)),
+        roles: ['Admin', 'Manager', 'Employee'].filter((r) => user.is(r)).join(','),
+        // all roles (scopes) contained in the login token - helps to find wrongly configured role collections
+        token_roles: Object.keys(user.roles || {})
+            .filter((r) => !['openid', 'uaa.user', 'authenticated-user', 'identified-user', 'any'].includes(r))
+            .join(', '),
         active: !!ctx.user?.active,
         is_admin: user.is('Admin'),
         is_manager: user.is('Manager') && !!ctx.manager?.active,

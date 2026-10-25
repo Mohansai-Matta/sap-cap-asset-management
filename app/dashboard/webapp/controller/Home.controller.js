@@ -21,9 +21,9 @@ sap.ui.define([
                     this.getOwnerComponent().getRouter().navTo("dashboard", { role: role, section: "overview" }, true);
                     return;
                 }
-                message.setDescription(user.registered === false
-                    ? this._text("notRegisteredText", [user.user_id])
-                    : this._text("noAccessText"));
+                message.setDescription(!user.has_role
+                    ? this._text("noRoleText", [user.user_id, user.token_roles || "none"])
+                    : user.registered === false ? this._text("notRegisteredText", [user.user_id]) : this._text("noAccessText"));
             } catch (error) {
                 message.setDescription(error.message);
             }

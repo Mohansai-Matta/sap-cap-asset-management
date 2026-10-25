@@ -12,6 +12,8 @@ sap.ui.define(
             onInit: function () {
                 const model = new JSONModel({ loaded: false });
                 this.getView().setModel(model, "user");
+                // the logout endpoint exists only behind the SAP application router
+                this.getView().setModel(new JSONModel({ deployed: window.location.pathname.startsWith(DEPLOYED_PREFIX) }), "view");
                 // show only the tiles the logged-in user may open
                 fetch("/odata/v4/user/me()", { headers: { Accept: "application/json" }, credentials: "same-origin" })
                     .then(async (response) => {
@@ -25,12 +27,24 @@ sap.ui.define(
                         throw new Error("Could not load your user (" + response.status + ")" + (reason ? ": " + reason : "."));
                     })
                     .then((user) => {
-                        const message = !user.is_admin && !user.is_manager && !user.is_employee
-                            ? (user.registered ? "No dashboard is available for your roles." : "Your login '" + user.user_id + "' is not registered in Asset Management. Please contact the administrator.")
-                            : "";
+                        let message = "";
+                        if (!user.has_role) {
+                            message = "Your user '" + user.user_id + "' has no Asset Management role. Ask your SAP BTP administrator to assign the role collection " +
+                                "AssetManagement_Admin, AssetManagement_Manager or AssetManagement_Employee in the BTP cockpit (Security > Users), then sign out and log in again. " +
+                                "Roles in your current login: " + (user.token_roles || "none") + ".";
+                        } else if (!user.is_admin && !user.is_manager && !user.is_employee) {
+                            message = user.registered
+                                ? "Your user is not linked to an employee / manager record. Please ask the administrator to link it in Admin Dashboard > Settings & Permissions > Users."
+                                : "Your login '" + user.user_id + "' (roles: " + user.roles + ") is not registered in Asset Management yet. " +
+                                    "Please ask the administrator to create your user in Admin Dashboard > Settings & Permissions > Users.";
+                        }
                         model.setData(Object.assign({ loaded: true, message: message }, user));
                     })
                     .catch((error) => model.setData({ loaded: true, message: error.message }));
+            },
+
+            onSignOut: function () {
+                window.location.href = "/do/logout";
             },
 
             onOpenApp: function (oEvent) {
