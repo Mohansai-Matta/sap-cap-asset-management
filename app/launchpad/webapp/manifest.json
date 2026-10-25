@@ -47,7 +47,8 @@
           "supportedLocales": [
             ""
           ],
-          "fallbackLocale": ""
+          "fallbackLocale": "",
+          "async": true
         }
       }
     },
