@@ -4,7 +4,7 @@
     {
       "type": "shell",
       "label": "cds watch (hybrid - SAP HANA)",
-      "command": "cds watch --profile hybrid",
+      "command": "cds deploy --to hana && cds watch --profile hybrid",
       "problemMatcher": []
     }
   ]

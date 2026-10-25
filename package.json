@@ -9,16 +9,17 @@
   },
   "scripts": {
     "start": "cds-serve",
-    "watch": "cds watch --profile hybrid",
-    "watch-employee": "cds watch --profile hybrid --open employee/index.html?sap-ui-xx-viewCache=false --livereload false",
-    "watch-department": "cds watch --profile hybrid --open department/index.html?sap-ui-xx-viewCache=false --livereload false",
-    "watch-manager": "cds watch --profile hybrid --open manager/index.html?sap-ui-xx-viewCache=false --livereload false",
-    "watch-assets": "cds watch --profile hybrid --open assets/index.html?sap-ui-xx-viewCache=false --livereload false",
+    "watch": "cds deploy --to hana && cds watch --profile hybrid",
+    "watch-employee": "cds deploy --to hana && cds watch --profile hybrid --open employee/index.html?sap-ui-xx-viewCache=false --livereload false",
+    "watch-department": "cds deploy --to hana && cds watch --profile hybrid --open department/index.html?sap-ui-xx-viewCache=false --livereload false",
+    "watch-manager": "cds deploy --to hana && cds watch --profile hybrid --open manager/index.html?sap-ui-xx-viewCache=false --livereload false",
+    "watch-assets": "cds deploy --to hana && cds watch --profile hybrid --open assets/index.html?sap-ui-xx-viewCache=false --livereload false",
     "build": "cds build --production",
     "build:mta": "mbt build -t mta_archives --mtar asset-management.mtar",
     "deploy": "cf deploy mta_archives/asset-management.mtar --retries 1",
     "undeploy": "cf undeploy asset-management --delete-services --delete-service-keys --delete-service-brokers",
-    "watch-dashboard": "cds watch --profile hybrid --open dashboard/index.html?sap-ui-xx-viewCache=false --livereload false"
+    "watch-dashboard": "cds deploy --to hana && cds watch --profile hybrid --open dashboard/index.html?sap-ui-xx-viewCache=false --livereload false",
+    "deploy:db": "cds deploy --to hana"
   },
   "dependencies": {
     "@cap-js/hana": "^3.1.2",
