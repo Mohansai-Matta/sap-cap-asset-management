@@ -4,7 +4,7 @@ An asset management application with three role-based dashboards (**Admin**, **M
 
 | Layer | Technology |
 |-------|------------|
-| Database | **SAP HANA Cloud** (HDI container, `@cap-js/hana`) |
+| Database | **SAP HANA Cloud** (HDI container, `@cap-js/hana`); in-memory SQLite only for local `cds watch` |
 | Backend | **SAP Cloud Application Programming Model (CAP)**, Node.js, OData V4 |
 | UI | **SAPUI5** dashboards (sap.tnt ToolPage, sap.m, sap.f cards, sap.viz charts, sap.ui.export) and **SAP Fiori elements V4** master data apps |
 | Security | **SAP Authorization and Trust Management (XSUAA)**: role-based access checked on the server |
@@ -76,14 +76,27 @@ To remove everything: `cf undeploy asset-management --delete-services --delete-s
 
 > The CSV files in `db/data` are sample data, and the HDI deployer resets those rows on every deployment. Remove the files (or the rows) before productive use.
 
-## Local development (against SAP HANA Cloud)
+## Local development
 
-The project uses SAP HANA in all profiles. After the first deployment, bind the local project to the HDI container:
+| Command | Database | Login |
+|---------|----------|-------|
+| `cds watch` (or `npm run watch`) | in-memory SQLite, filled from `db/data` at every start | mocked users (below) |
+| `cds watch --profile hybrid` (or `npm run watch:hybrid`) | your SAP HANA Cloud HDI container | mocked users (below) |
+| deployed app (`mbt build` + `cf deploy`) | SAP HANA Cloud HDI container | XSUAA |
+
+Quick start in SAP Business Application Studio:
 
 ```bash
 npm ci
+cds watch
+```
+
+To work against SAP HANA instead, bind the HDI container once after the first deployment, deploy the current tables and start in the hybrid profile:
+
+```bash
 cds bind -2 asset-management-db
-npm run watch              # cds watch --profile hybrid
+npm run deploy:db          # cds deploy --to hana
+npm run watch:hybrid       # cds watch --profile hybrid
 ```
 
 Open <http://localhost:4004/launchpad/index.html> or <http://localhost:4004/dashboard/index.html>. Mocked users (user / password):

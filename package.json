@@ -9,17 +9,18 @@
   },
   "scripts": {
     "start": "cds-serve",
-    "watch": "cds deploy --to hana && cds watch --profile hybrid",
-    "watch-employee": "cds deploy --to hana && cds watch --profile hybrid --open employee/index.html?sap-ui-xx-viewCache=false --livereload false",
-    "watch-department": "cds deploy --to hana && cds watch --profile hybrid --open department/index.html?sap-ui-xx-viewCache=false --livereload false",
-    "watch-manager": "cds deploy --to hana && cds watch --profile hybrid --open manager/index.html?sap-ui-xx-viewCache=false --livereload false",
-    "watch-assets": "cds deploy --to hana && cds watch --profile hybrid --open assets/index.html?sap-ui-xx-viewCache=false --livereload false",
+    "watch": "cds watch",
+    "watch:hybrid": "cds watch --profile hybrid",
+    "deploy:db": "cds deploy --to hana",
+    "watch-dashboard": "cds watch --open dashboard/index.html?sap-ui-xx-viewCache=false --livereload false",
+    "watch-assets": "cds watch --open assets/index.html?sap-ui-xx-viewCache=false --livereload false",
+    "watch-employee": "cds watch --open employee/index.html?sap-ui-xx-viewCache=false --livereload false",
+    "watch-department": "cds watch --open department/index.html?sap-ui-xx-viewCache=false --livereload false",
+    "watch-manager": "cds watch --open manager/index.html?sap-ui-xx-viewCache=false --livereload false",
     "build": "cds build --production",
     "build:mta": "mbt build -t mta_archives --mtar asset-management.mtar",
     "deploy": "cf deploy mta_archives/asset-management.mtar --retries 1",
-    "undeploy": "cf undeploy asset-management --delete-services --delete-service-keys --delete-service-brokers",
-    "watch-dashboard": "cds deploy --to hana && cds watch --profile hybrid --open dashboard/index.html?sap-ui-xx-viewCache=false --livereload false",
-    "deploy:db": "cds deploy --to hana"
+    "undeploy": "cf undeploy asset-management --delete-services --delete-service-keys --delete-service-brokers"
   },
   "dependencies": {
     "@cap-js/hana": "^3.1.2",
@@ -29,7 +30,8 @@
   },
   "devDependencies": {
     "@sap/cds-dk": "^10.2.0",
-    "cds-plugin-ui5": "^0.17.0"
+    "cds-plugin-ui5": "^0.17.0",
+    "@cap-js/sqlite": "^3"
   },
   "workspaces": [
     "app/*"
@@ -43,7 +45,7 @@
   "cds": {
     "requires": {
       "db": {
-        "kind": "hana"
+        "kind": "sql"
       },
       "auth": {
         "[development]": {
