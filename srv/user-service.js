@@ -1,3 +1,4 @@
+// Example change to demonstrate pulling updates in SAP Business Application Studio (git pull).
 const cds = require('@sap/cds');
 const { me } = require('./lib/context');
 const { explain, checkSchema } = require('./lib/schema-check');
