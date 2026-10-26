@@ -112,6 +112,31 @@ Open <http://localhost:4004/launchpad/index.html> or <http://localhost:4004/dash
 
 `srv/req.http` contains example requests for all services.
 
+### Real XSUAA logins locally (optional)
+
+Normally you test locally with the mocked users above. To log in with your real SAP BTP user and its role collections, run the service with XSUAA and a local application router (port 5000) in front of it:
+
+| Port | What runs there |
+|------|-----------------|
+| 4004 | `cds watch --profile xsuaa-local`: accepts only XSUAA tokens (opening it directly gives 401) |
+| 5000 | local application router: SAP login page, then forwards apps and OData to port 4004 |
+
+Prerequisites: the app was deployed once with this version (the XSUAA instance allows the redirect URIs `https://*.applicationstudio.cloud.sap/**` and `http://localhost:5000/**`), and you are logged in with `cf login`.
+
+```bash
+# once
+npm run approuter:install     # installs @sap/approuter in .deploy/app-router
+npm run bind:xsuaa            # cds bind -2 asset-management-auth --for xsuaa-local
+
+# terminal 1
+npm run watch:xsuaa           # cds watch --profile xsuaa-local
+
+# terminal 2
+npm run approuter:local       # application router on port 5000
+```
+
+Open port 5000. In SAP Business Application Studio, click *Open in a New Tab* when the port is exposed. After the SAP login the entry page shows the dashboards of your role collections. The database is still the in-memory SQLite database with the sample data.
+
 ## Troubleshooting
 
 **"Could not load your user (503/500)" / "The database has not been updated for this version"**: the service runs against an HDI container that doesn't contain the current tables yet (for example `Users` or `AssetRequests`). This happens when you pull a new version but don't deploy the database:

@@ -11,6 +11,10 @@
     "start": "cds-serve",
     "watch": "cds watch",
     "watch:hybrid": "cds watch --profile hybrid",
+    "bind:xsuaa": "cds bind -2 asset-management-auth --for xsuaa-local",
+    "watch:xsuaa": "cds watch --profile xsuaa-local",
+    "approuter:install": "npm install --prefix .deploy/app-router",
+    "approuter:local": "cds bind --exec --profile xsuaa-local -- node .deploy/app-router/local.js",
     "deploy:db": "cds deploy --to hana",
     "watch-dashboard": "cds watch --open dashboard/index.html?sap-ui-xx-viewCache=false --livereload false",
     "watch-assets": "cds watch --open assets/index.html?sap-ui-xx-viewCache=false --livereload false",
@@ -137,6 +141,9 @@
           }
         },
         "[production]": {
+          "kind": "xsuaa"
+        },
+        "[xsuaa-local]": {
           "kind": "xsuaa"
         }
       },

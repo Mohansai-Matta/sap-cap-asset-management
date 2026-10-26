@@ -186,6 +186,9 @@ resources:
             - "x509"
           redirect-uris:
             - https://*~{app-api/app-uri}/**
+            # local approuter (npm run approuter:local) in SAP Business Application Studio / on localhost
+            - https://*.applicationstudio.cloud.sap/**
+            - http://localhost:5000/**
     requires:
       - name: app-api
 
