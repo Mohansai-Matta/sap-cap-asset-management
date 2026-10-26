@@ -11,6 +11,7 @@
     "start": "cds-serve",
     "watch": "cds watch",
     "watch:hybrid": "cds watch --profile hybrid",
+    "watch:btp": "node scripts/watch-btp.js",
     "bind:xsuaa": "cds bind -2 asset-management-auth --for xsuaa-local",
     "watch:xsuaa": "cds watch --profile xsuaa-local",
     "approuter:install": "npm install --prefix .deploy/app-router",

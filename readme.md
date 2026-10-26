@@ -112,30 +112,22 @@ Open <http://localhost:4004/launchpad/index.html> or <http://localhost:4004/dash
 
 `srv/req.http` contains example requests for all services.
 
-### Real XSUAA logins locally (optional)
+### Local run with the real SAP BTP login (no popup)
 
-Normally you test locally with the mocked users above. To log in with your real SAP BTP user and its role collections, run the service with XSUAA and a local application router (port 5000) in front of it:
+Plain `cds watch` on port 4004 asks for a test user in a browser popup. That's CAP's local test login. The SAP login page (with your role collections from the BTP cockpit) is always provided by the application router, so locally you run the application router in front of CAP:
+
+```bash
+npm run watch:btp
+```
+
+Then open **port 5000**, not 4004. In SAP Business Application Studio, click *Open in New Tab* for port 5000. Because you're already logged in to SAP BTP, XSUAA signs you in without a popup, and the dashboards follow the role collections assigned to you in the BTP cockpit.
 
 | Port | What runs there |
 |------|-----------------|
-| 4004 | `cds watch --profile xsuaa-local`: accepts only XSUAA tokens (opening it directly gives 401) |
-| 5000 | local application router: SAP login page, then forwards apps and OData to port 4004 |
+| 5000 | application router: SAP login, forwards apps and OData to port 4004 |
+| 4004 | `cds watch --profile xsuaa-local`: accepts XSUAA logins only (opening it directly gives 401) |
 
-Prerequisites: the app was deployed once with this version (the XSUAA instance allows the redirect URIs `https://*.applicationstudio.cloud.sap/**` and `http://localhost:5000/**`), and you are logged in with `cf login`.
-
-```bash
-# once
-npm run approuter:install     # installs @sap/approuter in .deploy/app-router
-npm run bind:xsuaa            # cds bind -2 asset-management-auth --for xsuaa-local
-
-# terminal 1
-npm run watch:xsuaa           # cds watch --profile xsuaa-local
-
-# terminal 2
-npm run approuter:local       # application router on port 5000
-```
-
-Open port 5000. In SAP Business Application Studio, click *Open in a New Tab* when the port is exposed. After the SAP login the entry page shows the dashboards of your role collections. The database is still the in-memory SQLite database with the sample data.
+Prerequisites: deploy this version once (`mbt build` and `cf deploy`), so that XSUAA allows the redirect URIs `https://*.applicationstudio.cloud.sap/**` and `http://localhost:5000/**`, and log in with `cf login`. On the first run, `npm run watch:btp` installs the application router and binds the XSUAA instance (`cds bind`). The database stays the in-memory SQLite database with the sample data. Stop with Ctrl+C.
 
 ## Troubleshooting
 
