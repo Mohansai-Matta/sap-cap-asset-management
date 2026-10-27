@@ -94,11 +94,11 @@ sap.ui.define([
                 Charts.kpi({ title: "Total Assets", value: stats.totalAssets, icon: "sap-icon://laptop", press: go("assets") }),
                 Charts.kpi({ title: "Managers", subtitle: stats.activeManagers + " active", value: stats.totalManagers, icon: "sap-icon://manager", press: go("managers") }),
                 Charts.kpi({ title: "Employees", value: stats.totalEmployees, icon: "sap-icon://employee", press: go("employees") }),
-                Charts.kpi({ title: "Assigned Assets", value: stats.assignedAssets, icon: "sap-icon://add-employee", color: "Good", press: go("ownership") }),
+                Charts.kpi({ title: "Assigned Assets", value: stats.assignedAssets, icon: "sap-icon://add-employee", color: "Good", press: go("assets") }),
                 Charts.kpi({ title: "Available Assets", value: stats.availableAssets, icon: "sap-icon://inventory", color: "Good", press: go("assets") }),
-                Charts.kpi({ title: "Pending Requests", value: stats.pendingRequests, icon: "sap-icon://inbox", color: stats.pendingRequests ? "Critical" : "Neutral", press: go("requests") }),
-                Charts.kpi({ title: "Maintenance Records", subtitle: stats.openMaintenance + " open", value: stats.maintenanceRecords, icon: "sap-icon://wrench", press: go("maintenance") }),
-                Charts.kpi({ title: "Overdue Returns", value: stats.overdueReturns, icon: "sap-icon://lateness", color: stats.overdueReturns ? "Error" : "Neutral", press: go("ownership") })
+                Charts.kpi({ title: "Pending Requests", value: stats.pendingRequests, icon: "sap-icon://inbox", color: stats.pendingRequests ? "Critical" : "Neutral" }),
+                Charts.kpi({ title: "Maintenance Records", subtitle: stats.openMaintenance + " open", value: stats.maintenanceRecords, icon: "sap-icon://wrench" }),
+                Charts.kpi({ title: "Overdue Returns", value: stats.overdueReturns, icon: "sap-icon://lateness", color: stats.overdueReturns ? "Error" : "Neutral" })
             ]),
             Sections.grid([
                 Charts.chart({ title: "Assets by Status", type: "donut", rows: byStatus }),
@@ -110,10 +110,8 @@ sap.ui.define([
                     description: r.reason,
                     info: format.date(r.createdAt),
                     infoState: "Warning",
-                    icon: "sap-icon://inbox",
-                    type: "Navigation",
-                    press: go("requests")
-                }), "No pending requests"),
+                    icon: "sap-icon://inbox"
+                }), "No pending requests", "Handled by the employees' managers"),
                 Sections.listCard("Recent Activity", audit, (a) => ({
                     title: a.action + " " + a.entity,
                     description: (a.details || a.entity_key || "") + " - " + a.user_id,
@@ -311,12 +309,6 @@ sap.ui.define([
             edit: { title: "Edit Asset", fields: assetFields.map((f) => (f.name === "status" ? Object.assign({}, f, { options: ASSET_STATUS }) : f)), validate: assetValidate },
             remove: { label: (r) => r.asset_tag },
             rowActions: [
-                { text: "Assign", icon: "sap-icon://add-employee", visible: { paths: ["status"], test: (s) => s === "Available" },
-                    press: (row, c, t) => Actions.assign(ctx, t.refresh, { asset_id: row.asset_id }) },
-                { text: "Transfer", icon: "sap-icon://journey-change", visible: { paths: ["current_holder_employee_id"], test: (h) => !!h },
-                    press: (row, c, t) => Actions.transfer(ctx, t.refresh, row) },
-                { text: "Return", icon: "sap-icon://undo", visible: { paths: ["current_holder_employee_id"], test: (h) => !!h },
-                    press: (row, c, t) => Actions.returnAsset(ctx, t.refresh, row) },
                 { text: "Ownership History", icon: "sap-icon://history", press: (row) => Actions.history(ctx, row.asset_id, row.asset_tag) }
             ]
         }, ctx);
@@ -448,12 +440,6 @@ sap.ui.define([
         }, ctx);
     };
 
-    const maintenance = function (ctx) {
-        const table = maintenanceTable(ctx, true);
-        ctx.setActiveTable(table);
-        return table.control;
-    };
-
     const requestTable = function (ctx) {
         return EntityTable.create({
             title: "Asset Requests",
@@ -493,12 +479,6 @@ sap.ui.define([
                     press: (row, c, t) => Actions.resolve(ctx, t.refresh, row) }
             ]
         }, ctx);
-    };
-
-    const requests = function (ctx) {
-        const table = requestTable(ctx);
-        ctx.setActiveTable(table);
-        return table.control;
     };
 
     const REPORTS = [
@@ -664,15 +644,12 @@ sap.ui.define([
             { key: "managers", text: "Manager Management", icon: "sap-icon://manager", subtitle: "Create, edit, activate and deactivate manager accounts", build: managers },
             { key: "employees", text: "Employee Management", icon: "sap-icon://employee", subtitle: "Employee records, departments and manager assignment", build: employees },
             { key: "assets", text: "Asset Management", icon: "sap-icon://laptop", subtitle: "Add, update, search and filter assets", build: assets },
-            { key: "ownership", text: "Asset Ownership", icon: "sap-icon://customer-and-contacts", subtitle: "Assign, transfer and return assets; ownership history", build: ownership },
-            { key: "maintenance", text: "Maintenance", icon: "sap-icon://wrench", subtitle: "Maintenance records, costs and service dates", build: maintenance },
-            { key: "requests", text: "Asset Requests", icon: "sap-icon://inbox", subtitle: "Approve or reject requests, returns and issue reports", build: requests },
             { key: "reports", text: "Reports & Analytics", icon: "sap-icon://business-objects-experience", subtitle: "Inventory, allocation, maintenance and request reports", build: (ctx) => Sections.reports(ctx, REPORTS) },
             { key: "audit", text: "Audit Log", icon: "sap-icon://activity-items", subtitle: "Who changed what and when", build: audit },
             { key: "notifications", text: "Notifications", icon: "sap-icon://bell", build: Sections.notifications },
             { key: "settings", text: "Settings & Permissions", icon: "sap-icon://action-settings", subtitle: "Departments, categories, vendors, users and roles", build: settings }
         ],
-        // building blocks shared with the manager dashboard
+        // building blocks of the manager dashboard (asset ownership, maintenance, asset requests)
         shared: {
             ownership: ownership,
             historyTable: historyTable,

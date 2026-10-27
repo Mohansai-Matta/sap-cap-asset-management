@@ -1,6 +1,6 @@
 const cds = require('@sap/cds');
 const { db, today } = require('./common');
-const { notify, notifyEmployees, approversOf } = require('./notify');
+const { notifyEmployees } = require('./notify');
 const { audit } = require('./audit');
 const ownership = require('./ownership');
 
@@ -14,12 +14,25 @@ const loadRequest = async (req, request_id) => {
 const requesterName = async (employeeId) =>
     (await SELECT.one.from(db().Employees).columns('full_name').where({ employee_id: employeeId }))?.full_name;
 
+/** The active manager assigned to an employee - asset requests are sent to this manager */
+const assignedManager = async (employeeId) => {
+    const { Employees, Managers } = db();
+    const employee = await SELECT.one.from(Employees).columns('manager_manager_id').where({ employee_id: employeeId });
+    if (!employee?.manager_manager_id) return null;
+    return SELECT.one.from(Managers).columns('manager_id', 'full_name', 'email', 'employee_employee_id')
+        .where({ manager_id: employee.manager_manager_id, active: true });
+};
+
 /**
  * Creates a request of an employee: New (asset), Return or Issue.
+ * The request is sent to the employee's assigned manager.
  */
 const create = async (req, { type, employee_id, asset_id, category_id, issue_type, reason, needed_by }) => {
     const { AssetRequests, Assets, AssetCategories } = db();
     let asset, category;
+
+    const manager = await assignedManager(employee_id);
+    if (!manager) req.reject(400, 'No manager is assigned to you. Please ask the administrator to assign your manager, then send the request again.');
 
     if (type === 'New') {
         if (!category_id) req.reject(400, 'Please select an asset category');
@@ -57,12 +70,12 @@ const create = async (req, { type, employee_id, asset_id, category_id, issue_typ
     const what = type === 'New' ? `a new ${category.name}`
         : type === 'Return' ? `to return ${ownership.describe(asset)}`
         : `an issue (${issue_type}) for ${ownership.describe(asset)}`;
-    await notify(await approversOf(employee_id), {
+    await notifyEmployees([manager.employee_employee_id], {
         title: type === 'Issue' ? 'Asset issue reported' : type === 'Return' ? 'Asset return request' : 'New asset request',
         message: `${who} ${type === 'Issue' ? 'reported' : 'requested'} ${what}`,
         type: 'Request', entity: 'AssetRequests', id: row.request_id
     });
-    await audit('CREATE_REQUEST', 'AssetRequests', row.request_id, `${type} request by ${who}`);
+    await audit('CREATE_REQUEST', 'AssetRequests', row.request_id, `${type} request by ${who} to ${manager.full_name}`);
     return SELECT.one.from(AssetRequests).where({ request_id: row.request_id });
 };
 
@@ -160,4 +173,4 @@ const cancel = async (req, { request_id, employee_id }) => {
     return SELECT.one.from(db().AssetRequests).where({ request_id });
 };
 
-module.exports = { create, approve, reject, resolve, cancel, loadRequest };
+module.exports = { create, approve, reject, resolve, cancel, loadRequest, assignedManager };

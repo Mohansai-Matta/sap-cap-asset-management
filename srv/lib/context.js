@@ -57,6 +57,9 @@ const managerScope = async (manager) => {
         employeeQuery.where({ manager_manager_id: manager.manager_id });
     }
     const employeeIds = (await employeeQuery).map((e) => e.employee_id);
+    // employees whose assigned manager is this manager - their asset requests are sent to this manager
+    const reportIds = (await SELECT.from(Employees).columns('employee_id').where({ manager_manager_id: manager.manager_id }))
+        .map((e) => e.employee_id);
 
     const managed = await SELECT.from(Assets).columns('asset_id').where({ manager_manager_id: manager.manager_id });
     const held = employeeIds.length
@@ -70,6 +73,7 @@ const managerScope = async (manager) => {
 
     const scope = {
         employeeIds,
+        reportIds,
         teamAssetIds,
         assignableAssetIds,
         assetIds: [...new Set([...teamAssetIds, ...assignableAssetIds])]

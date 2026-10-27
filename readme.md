@@ -14,16 +14,16 @@ An asset management application with three role-based dashboards (**Admin**, **M
 
 | Dashboard | Who | Modules |
 |-----------|-----|---------|
-| **Admin** | role collection `AssetManagement_Admin` | Overview (KPIs and charts), Manager Management (create, edit, activate/deactivate, team and assets), Employee Management (incl. login creation), Asset Management, Asset Ownership (assign, transfer, return, edit, history), Maintenance, Asset Requests (approve, reject, resolve), Reports & Analytics (charts and Excel export), Audit Log, Notifications, Settings & Permissions (departments, categories, vendors, users, roles) |
-| **Manager** | role collection `AssetManagement_Manager` | Overview, Employee Records (view and update), Employee Asset Details, Asset Ownership, Asset Allocation, Maintenance Records, Requests & Approvals, Reports, Notifications, Manager Profile |
-| **Employee** | role collection `AssetManagement_Employee` (also included for managers) | Overview, My Profile, My Assets, My Asset Ownership, Request an Asset, Return Asset, Report Asset Issues, Maintenance Information, My Requests, Notifications |
+| **Admin** | role collection `AssetManagement_Admin` | Overview (KPIs and charts), Manager Management (create, edit, activate/deactivate, team and assets), Employee Management (incl. login creation), Asset Management, Reports & Analytics (charts and Excel export), Audit Log, Notifications, Settings & Permissions (departments, categories, vendors, users, roles) |
+| **Manager** | role collection `AssetManagement_Manager` | Overview, Employee Records (view and update), Employee Asset Details, Asset Ownership (assign, transfer, return, edit, history), Asset Allocation, Maintenance, Asset Requests (approve, reject, resolve), Reports, Notifications, Manager Profile |
+| **Employee** | role collection `AssetManagement_Employee` (also included for managers) | Overview, My Profile, My Assets, My Asset Ownership, Request Asset from Manager (sent to the assigned manager), Return Asset, Report Asset Issues, Maintenance Information, My Requests, Notifications |
 
 Every dashboard has a sidebar, a header with module search, a notifications popover and a profile menu (switch dashboards, sign out). Tables support search, filters, sorting, paging ("More"), Excel export, status badges, confirmation dialogs and validated forms. All changes are stored in SAP HANA and show up on every dashboard that displays them.
 
 ### Server-side authorization
 
 - Each dashboard uses its own OData service: `/odata/v4/admin`, `/odata/v4/manager` and `/odata/v4/employee`. Each service requires the matching XSUAA role.
-- **Managers** only see and change records of their team: employees of their department and employees who report to them, those employees' assets, and the assets they manage. Every action (assign, transfer, return, maintenance, approvals) is checked against this scope. A manager cannot decide on their own requests.
+- **Managers** only see and change records of their team: employees of their department and employees who report to them, those employees' assets, and the assets they manage. Every action (assign, transfer, return, maintenance, approvals) is checked against this scope. Asset requests, returns and issue reports go to the employee's **assigned manager**, and only that manager sees and decides them. A manager cannot decide on their own requests.
 - **Employees** only see their own profile, assets, ownership, maintenance and requests. They cannot change ownership records directly; they raise requests instead.
 - Every change is written to the **audit log**, and the people involved get **notifications** (new request, decision, assignment, transfer, maintenance, overdue return).
 

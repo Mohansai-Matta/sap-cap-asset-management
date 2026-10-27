@@ -243,8 +243,8 @@ sap.ui.define([
             { key: "employeeAssets", text: "Employee Asset Details", icon: "sap-icon://laptop", subtitle: "Assets assigned to your team members", build: employeeAssets },
             { key: "ownership", text: "Asset Ownership", icon: "sap-icon://customer-and-contacts", subtitle: "View, edit and transfer ownership; every change is recorded", build: shared.ownership },
             { key: "allocation", text: "Asset Allocation", icon: "sap-icon://inventory", subtitle: "Assign available assets and track transfers", build: allocation },
-            { key: "maintenance", text: "Maintenance Records", icon: "sap-icon://wrench", subtitle: "Maintenance of the assets you manage", build: maintenance },
-            { key: "requests", text: "Requests & Approvals", icon: "sap-icon://inbox", subtitle: "Asset requests, returns and issue reports of your team", build: requests },
+            { key: "maintenance", text: "Maintenance", icon: "sap-icon://wrench", subtitle: "Maintenance records, costs and service dates of the assets you manage", build: maintenance },
+            { key: "requests", text: "Asset Requests", icon: "sap-icon://inbox", subtitle: "Approve or reject the requests, returns and issue reports of the employees assigned to you", build: requests },
             { key: "reports", text: "Reports", icon: "sap-icon://business-objects-experience", subtitle: "Allocation, ownership, maintenance and utilization", build: (ctx) => Sections.reports(ctx, REPORTS) },
             { key: "notifications", text: "Notifications", icon: "sap-icon://bell", build: Sections.notifications },
             { key: "profile", text: "Manager Profile", icon: "sap-icon://customer", subtitle: "Your account details", build: profile }

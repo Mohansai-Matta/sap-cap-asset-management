@@ -7,6 +7,7 @@ sap.ui.define([
     "sap/m/ObjectStatus",
     "sap/m/MessageBox",
     "sap/m/MessageToast",
+    "sap/m/MessageStrip",
     "sap/ui/layout/form/SimpleForm",
     "sap/ui/model/Filter",
     "sap/ui/model/FilterOperator",
@@ -17,7 +18,7 @@ sap.ui.define([
     "../util/FormDialog",
     "../util/api",
     "../util/format"
-], function (IconTabBar, IconTabFilter, VBox, Label, Text, ObjectStatus, MessageBox, MessageToast, SimpleForm, Filter, FilterOperator,
+], function (IconTabBar, IconTabFilter, VBox, Label, Text, ObjectStatus, MessageBox, MessageToast, MessageStrip, SimpleForm, Filter, FilterOperator,
     EntityTable, Charts, Sections, Actions, FormDialog, api, format) {
     "use strict";
 
@@ -288,28 +289,50 @@ sap.ui.define([
         return [Sections.grid([form(table)], "XL12 L12 M12 S12"), table.control];
     };
 
-    const requestAsset = (ctx) => requestPage(ctx, (table) => Sections.inlineForm({
-        title: "Request an Asset",
-        subtitle: "Your manager or the administrator will review the request",
-        model: ctx.model,
-        submitText: "Submit Request",
-        successText: "Asset request submitted",
-        fields: [
-            { name: "category_id", label: "Asset Category", type: "lookup", required: true, lookup: categoryLookup },
-            { name: "reason", label: "Reason", type: "textarea", required: true, maxLength: 1000 },
-            { name: "needed_by", label: "Needed By", type: "date" }
-        ],
-        validate: (v) => (v.needed_by && v.needed_by < format.isoDate(0) ? "'Needed by' must not be in the past" : null),
-        onSubmit: async (values) => {
-            await api.post(SERVICE + "/requestAsset", values);
-            table.refresh();
-            ctx.notify();
-        }
-    }), "New", "My Asset Requests");
+    /** Asset request to the employee's assigned manager */
+    const requestFromManager = async function (ctx) {
+        const me = (await api.get(SERVICE + "/MyProfile"))[0] || {};
+        const manager = me.manager_name;
+        const table = requestsTable(ctx, "New", "My Asset Requests");
+        ctx.setActiveTable(table);
+
+        const managerInfo = new SimpleForm({ editable: false, layout: "ResponsiveGridLayout", labelSpanL: 4, labelSpanM: 4 });
+        [["Name", manager], ["E-Mail", me.manager_email], ["Phone", me.manager_phone]].forEach(([label, value]) => {
+            managerInfo.addContent(new Label({ text: label }));
+            managerInfo.addContent(new Text({ text: value || "-" }));
+        });
+        const managerCard = Sections.card("Your Assigned Manager", manager ? managerInfo : new MessageStrip({
+            type: "Warning",
+            showIcon: true,
+            text: "No manager is assigned to you yet, so you cannot send asset requests. Please ask the administrator to assign your manager."
+        }), "Your asset requests are sent to this manager for approval");
+
+        if (!manager) return [Sections.grid([managerCard], "XL12 L12 M12 S12"), table.control];
+
+        const requestForm = Sections.inlineForm({
+            title: "Request an Asset",
+            subtitle: "The request is sent to " + manager + " for approval",
+            model: ctx.model,
+            submitText: "Send Request to " + manager,
+            successText: "Request sent to " + manager,
+            fields: [
+                { name: "category_id", label: "Asset Category", type: "lookup", required: true, lookup: categoryLookup },
+                { name: "reason", label: "Reason", type: "textarea", required: true, maxLength: 1000 },
+                { name: "needed_by", label: "Needed By", type: "date" }
+            ],
+            validate: (v) => (v.needed_by && v.needed_by < format.isoDate(0) ? "'Needed by' must not be in the past" : null),
+            onSubmit: async (values) => {
+                await api.post(SERVICE + "/requestAsset", values);
+                table.refresh();
+                ctx.notify();
+            }
+        });
+        return [Sections.grid([managerCard, requestForm], "XL6 L6 M12 S12"), table.control];
+    };
 
     const returnAsset = (ctx) => requestPage(ctx, (table) => Sections.inlineForm({
         title: "Return an Asset",
-        subtitle: "Submit a return request for an asset assigned to you",
+        subtitle: "The return request is sent to your assigned manager",
         model: ctx.model,
         submitText: "Submit Return Request",
         successText: "Return request submitted",
@@ -325,7 +348,7 @@ sap.ui.define([
 
     const reportIssuePage = (ctx) => requestPage(ctx, (table) => Sections.inlineForm({
         title: "Report an Asset Issue",
-        subtitle: "Report damaged, lost or malfunctioning assets",
+        subtitle: "Report damaged, lost or malfunctioning assets to your assigned manager",
         model: ctx.model,
         submitText: "Report Issue",
         successText: "Issue reported",
@@ -384,7 +407,7 @@ sap.ui.define([
             { key: "profile", text: "My Profile", icon: "sap-icon://customer", build: profile },
             { key: "myAssets", text: "My Assets", icon: "sap-icon://laptop", subtitle: "Assets assigned to you", build: myAssets },
             { key: "ownership", text: "My Asset Ownership", icon: "sap-icon://customer-and-contacts", subtitle: "Ownership details and history of your assets", build: ownership },
-            { key: "requestAsset", text: "Request an Asset", icon: "sap-icon://cart", build: requestAsset },
+            { key: "requestAsset", text: "Request Asset from Manager", icon: "sap-icon://cart", subtitle: "Send an asset request to your assigned manager and track its approval", build: requestFromManager },
             { key: "returnAsset", text: "Return Asset", icon: "sap-icon://undo", build: returnAsset },
             { key: "reportIssue", text: "Report Asset Issues", icon: "sap-icon://alert", build: reportIssuePage },
             { key: "maintenance", text: "Maintenance Information", icon: "sap-icon://wrench", subtitle: "Maintenance history and upcoming service of your assets", build: maintenance },

@@ -47,8 +47,9 @@ module.exports = class ManagerService extends cds.ApplicationService {
         this.before('READ', MaintenanceRecords, async (req) => {
             req.query.where({ asset_asset_id: inList((await scope(req)).teamAssetIds) });
         });
+        // asset requests are sent to the employee's assigned manager
         this.before('READ', AssetRequests, async (req) => {
-            req.query.where({ requested_by_employee_id: inList((await scope(req)).employeeIds) });
+            req.query.where({ requested_by_employee_id: inList((await scope(req)).reportIds) });
         });
         this.before('READ', MyProfile, async (req) => {
             req.query.where({ manager_id: (await requireManager(req)).manager.manager_id });
@@ -137,9 +138,11 @@ module.exports = class ManagerService extends cds.ApplicationService {
             const request = await requests.loadRequest(req, req.data.request_id);
             const { employee } = await requireManager(req);
             if (request.requested_by_employee_id === employee.employee_id) {
-                req.reject(403, 'You cannot decide on your own request - it is handled by the administrator');
+                req.reject(403, 'You cannot decide on your own request - it is handled by your own manager');
             }
-            await assertTeamEmployee(req, request.requested_by_employee_id);
+            if (!(await scope(req)).reportIds.includes(request.requested_by_employee_id)) {
+                req.reject(403, 'This request was sent to another manager');
+            }
             return request;
         };
 
@@ -176,12 +179,12 @@ module.exports = class ManagerService extends cds.ApplicationService {
         this.on('getStats', async (req) => {
             const s = await scope(req);
             await ownership.checkOverdue(s.employeeIds);
-            return stats.getStats({ employeeIds: s.employeeIds, assetIds: s.teamAssetIds, userId: req.user.id });
+            return stats.getStats({ employeeIds: s.employeeIds, requesterIds: s.reportIds, assetIds: s.teamAssetIds, userId: req.user.id });
         });
 
         this.on('getReport', async (req) => {
             const s = await scope(req);
-            return stats.getReport(req, req.data.report, { employeeIds: s.employeeIds, assetIds: s.teamAssetIds });
+            return stats.getReport(req, req.data.report, { employeeIds: s.employeeIds, requesterIds: s.reportIds, assetIds: s.teamAssetIds });
         });
 
         registerAudit(this);

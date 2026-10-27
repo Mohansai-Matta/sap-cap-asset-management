@@ -21,7 +21,8 @@ const getStats = async (scope = {}) => {
     const assetScope = scope.assetIds ? { asset_id: inList(scope.assetIds) } : {};
     const assetRef = scope.assetIds ? { asset_asset_id: inList(scope.assetIds) } : {};
     const empScope = scope.employeeIds ? { employee_id: inList(scope.employeeIds) } : {};
-    const requesterScope = scope.employeeIds ? { requested_by_employee_id: inList(scope.employeeIds) } : {};
+    const requesterIds = scope.requesterIds || scope.employeeIds;
+    const requesterScope = requesterIds ? { requested_by_employee_id: inList(requesterIds) } : {};
     const ownerScope = scope.employeeIds ? { owner_employee_id: inList(scope.employeeIds) } : {};
 
     const costRow = await whereIf(SELECT.one.from(MaintenanceRecords).columns('sum(cost) as total'), assetRef);
@@ -87,7 +88,7 @@ const getReport = async (req, name, scope = {}) => {
     return report({
         asset: scope.assetIds ? { asset_id: inList(scope.assetIds) } : {},
         assetRef: scope.assetIds ? { asset_asset_id: inList(scope.assetIds) } : {},
-        requester: scope.employeeIds ? { requested_by_employee_id: inList(scope.employeeIds) } : {},
+        requester: (scope.requesterIds || scope.employeeIds) ? { requested_by_employee_id: inList(scope.requesterIds || scope.employeeIds) } : {},
         owner: scope.employeeIds ? { owner_employee_id: inList(scope.employeeIds) } : {}
     });
 };
