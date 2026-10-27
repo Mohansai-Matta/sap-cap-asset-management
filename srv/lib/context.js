@@ -32,11 +32,41 @@ const ensureManager = async (employeeId, { activate = true } = {}) => {
 };
 
 /**
+ * The employee record of a login that has the Manager or Employee role but no (valid) link yet:
+ * the employee with the same e-mail address, or a new employee record created from the login.
+ * Returns null if that employee already belongs to another login.
+ */
+const employeeForLogin = async (login) => {
+    const { Users, Employees } = db();
+    const userId = String(login.id);
+    if (!userId.includes('@')) return null;
+    let employee = await SELECT.one.from(Employees).where('lower(email) =', userId.toLowerCase());
+    if (employee) {
+        const other = await SELECT.one.from(Users).columns('user_id')
+            .where('employee_employee_id =', employee.employee_id, 'and lower(user_id) !=', userId.toLowerCase());
+        return other ? null : employee;
+    }
+    const attr = login.attr || {};
+    employee = {
+        employee_id: cds.utils.uuid(),
+        full_name: [attr.givenName, attr.familyName].filter(Boolean).join(' ') || userId.split('@')[0],
+        email: userId,
+        designation: login.is('Manager') ? 'Manager' : null,
+        status: 'Active'
+    };
+    await INSERT.into(Employees).entries(employee);
+    await audit('CREATE', 'Employees', employee.employee_id, `Employee record created for the login ${userId}`);
+    return employee;
+};
+
+/**
  * Resolves the logged-in user to the application records:
  * Users entry, linked employee and (if any) manager record.
- * - A login without Users entry is linked to the employee with the same e-mail address
- *   if the login has an Asset Management role (BTP role collection).
- * - A login with the Manager role whose employee has no manager record gets one.
+ * A login with the Manager or Employee role (BTP role collection or role in Settings & Permissions > Users)
+ * is set up automatically, so that assigning the role is enough:
+ * - no Users entry or no valid employee link: linked to the employee with the same e-mail (created if missing)
+ * - Manager role and no manager record: the manager record is created
+ * Deactivated users and deactivated managers stay blocked.
  */
 const getContext = async () => {
     const key = cds.context;
@@ -46,19 +76,23 @@ const getContext = async () => {
     const userId = login.id;
     // logins are compared case-insensitively (identity providers may send Name@Company.com)
     let user = await SELECT.one.from(Users).where('lower(user_id) =', String(userId).toLowerCase());
-    if (!user && (login.is('Manager') || login.is('Employee'))) {
-        const match = await SELECT.one.from(Employees).columns('employee_id', 'full_name', 'email')
-            .where('lower(email) =', String(userId).toLowerCase());
-        if (match) {
-            user = { user_id: userId, full_name: match.full_name, email: match.email, active: true,
-                role_code: login.is('Manager') ? 'Manager' : 'Employee', employee_employee_id: match.employee_id };
+    let employee = user?.active && user.employee_employee_id
+        ? await SELECT.one.from(Employees).where({ employee_id: user.employee_employee_id }) : null;
+    const hasRole = login.is('Manager') || login.is('Employee');
+    if (hasRole && !employee && (!user || user.active)) {
+        employee = await employeeForLogin(login);
+        if (employee && !user) {
+            user = { user_id: userId, full_name: employee.full_name, email: employee.email, active: true,
+                role_code: login.is('Manager') ? 'Manager' : 'Employee', employee_employee_id: employee.employee_id };
             await INSERT.into(Users).entries(user);
-            await audit('CREATE', 'Users', userId, `Login linked to the employee ${match.full_name} (same e-mail address)`);
+            await audit('CREATE', 'Users', userId, `Login linked to the employee ${employee.full_name}`);
+        } else if (employee) {
+            await UPDATE(Users).set({ employee_employee_id: employee.employee_id }).where({ user_id: user.user_id });
+            user = { ...user, employee_employee_id: employee.employee_id };
+            await audit('UPDATE', 'Users', user.user_id, `Login linked to the employee ${employee.full_name}`);
         }
     }
-    const employeeId = user?.active ? user.employee_employee_id : null;
-    const employee = employeeId ? await SELECT.one.from(Employees).where({ employee_id: employeeId }) : null;
-    let manager = employeeId ? await SELECT.one.from(Managers).where({ employee_employee_id: employeeId }) : null;
+    let manager = employee ? await SELECT.one.from(Managers).where({ employee_employee_id: employee.employee_id }) : null;
     // a deactivated manager stays deactivated; only a missing manager record is created
     if (employee && !manager && login.is('Manager')) manager = await ensureManager(employee.employee_id, { activate: false });
     const ctx = { userId, user, employee, manager };
@@ -129,6 +163,7 @@ const me = async () => {
         is_employee: user.is('Employee') && !!ctx.employee,
         employee_id: ctx.employee?.employee_id,
         manager_id: ctx.manager?.manager_id,
+        manager_active: !!ctx.manager?.active,
         designation: ctx.employee?.designation,
         department_name: department?.name,
         unread_notifications: Number(unread?.n ?? 0)

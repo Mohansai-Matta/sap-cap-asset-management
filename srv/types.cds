@@ -46,6 +46,7 @@ type UserInfo {
     is_employee          : Boolean;
     employee_id          : UUID;
     manager_id           : UUID;
+    manager_active       : Boolean;
     designation          : String(100);
     department_name      : String(100);
     unread_notifications : Integer;

@@ -199,8 +199,10 @@ sap.ui.define([
                 return user.has_role ? this._text("noRoleDeployed", [user.user_id, "AssetManagement_" + roleName])
                     : this._text("noRoleText", [user.user_id, user.token_roles || "none"]);
             }
+            if (role !== "admin" && user.registered && !user.active) return this._text("userDeactivated", [user.user_id]);
+            if (role !== "admin" && !user.employee_id) return this._text("employeeNotLinked", [user.user_id]);
+            if (role === "manager" && user.manager_id && !user.manager_active) return this._text("managerDeactivated", [user.user_id]);
             if (role === "manager") return this._text("managerNotLinked", [user.user_id]);
-            if (role === "employee") return this._text("employeeNotLinked", [user.user_id]);
             return this._text("noDashboardAccess", [config.title]);
         },
 
