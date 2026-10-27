@@ -28,6 +28,9 @@ sap.ui.define([
     const EMPLOYEE_STATUS = opts(["Active", "Inactive", "OnLeave"]);
     const ASSET_STATUS = opts(["Available", "Assigned", "InRepair", "Lost", "Retired", "Archived"]);
     const employeeLookup = { path: "/Employees", key: "employee_id", text: "full_name", additional: "email" };
+    const departmentLookup = { path: "/Departments", key: "dept_id", text: "name", additional: "cost_center" };
+    const managerLookup = { path: "/Managers", key: "manager_id", text: "full_name", additional: "email" };
+    const ACCOUNT = [{ key: "true", text: "Active" }, { key: "false", text: "Inactive" }];
 
     const overview = async function (ctx) {
         const today = format.isoDate(0);
@@ -41,8 +44,9 @@ sap.ui.define([
         const go = (section) => () => ctx.navTo(section);
         return [
             Sections.kpis([
-                Charts.kpi({ title: "Team Employees", value: stats.totalEmployees, icon: "sap-icon://group", press: go("employees") }),
-                Charts.kpi({ title: "Team Assets", value: stats.totalAssets, icon: "sap-icon://laptop", press: go("employeeAssets") }),
+                Charts.kpi({ title: "Managers", value: stats.totalManagers, icon: "sap-icon://manager", press: go("managers") }),
+                Charts.kpi({ title: "Employees", value: stats.totalEmployees, icon: "sap-icon://group", press: go("employees") }),
+                Charts.kpi({ title: "Total Assets", value: stats.totalAssets, icon: "sap-icon://laptop", press: go("employeeAssets") }),
                 Charts.kpi({ title: "Assigned Assets", value: stats.assignedAssets, icon: "sap-icon://add-employee", color: "Good", press: go("ownership") }),
                 Charts.kpi({ title: "Available Assets", value: stats.availableAssets, icon: "sap-icon://inventory", color: "Good", press: go("allocation") }),
                 Charts.kpi({ title: "Pending Requests", value: stats.pendingRequests, icon: "sap-icon://inbox", color: stats.pendingRequests ? "Critical" : "Neutral", press: go("requests") }),
@@ -51,7 +55,7 @@ sap.ui.define([
             ]),
             Sections.grid([
                 Charts.chart({ title: "Asset Allocation by Employee", type: "bar", rows: allocation }),
-                Charts.chart({ title: "Team Assets by Status", type: "donut", rows: byStatus }),
+                Charts.chart({ title: "Assets by Status", type: "donut", rows: byStatus }),
                 Sections.listCard("Pending Requests", pending, (r) => ({
                     title: r.requester_name + " - " + format.status(r.type) + (r.asset_tag ? " " + r.asset_tag : r.category_name ? " (" + r.category_name + ")" : ""),
                     description: r.reason,
@@ -74,6 +78,42 @@ sap.ui.define([
         ];
     };
 
+    /** All managers (read only) with the employees assigned to them */
+    const managers = function (ctx) {
+        const table = EntityTable.create({
+            title: "Manager Records",
+            entitySet: "Managers",
+            key: "manager_id",
+            orderby: "full_name",
+            select: ["active"],
+            columns: [
+                { path: "full_name", label: "Manager", type: "title", subtitle: "email" },
+                { path: "phone", label: "Phone" },
+                { path: "department_name", label: "Department" },
+                { path: "employee_name", label: "Employee Record", minScreenWidth: "Desktop" },
+                { path: "active", label: "Account", type: "bool", trueText: "Active", falseText: "Inactive" }
+            ],
+            search: ["full_name", "email"],
+            filters: [
+                { path: "active", label: "Account", allText: "All accounts", options: ACCOUNT },
+                { path: "department_dept_id", label: "Department", lookup: departmentLookup }
+            ],
+            view: true,
+            rowActions: [{
+                text: "Assigned Employees", icon: "sap-icon://group",
+                press: async (row) => {
+                    const team = await api.get(SERVICE + "/Employees?$filter=manager_manager_id%20eq%20" + row.manager_id + "&$orderby=full_name");
+                    Actions.showTableDialog(ctx, "Employees assigned to " + row.full_name, [
+                        { path: "full_name", label: "Employee" }, { path: "email", label: "E-Mail" }, { path: "designation", label: "Designation" },
+                        { path: "department_name", label: "Department" }, { path: "status", label: "Status", type: "status" }
+                    ], team);
+                }
+            }]
+        }, ctx);
+        ctx.setActiveTable(table);
+        return table.control;
+    };
+
     const employees = function (ctx) {
         const table = EntityTable.create({
             title: "Employee Records",
@@ -94,7 +134,11 @@ sap.ui.define([
                 { path: "designation", label: "Designation" }, { path: "manager_name", label: "Assigned Manager" }, { path: "status", label: "Status", type: "status" }
             ],
             search: ["full_name", "email", "designation", "location"],
-            filters: [{ path: "status", label: "Status", options: EMPLOYEE_STATUS }],
+            filters: [
+                { path: "status", label: "Status", options: EMPLOYEE_STATUS },
+                { path: "department_dept_id", label: "Department", lookup: departmentLookup },
+                { path: "manager_manager_id", label: "Assigned Manager", lookup: managerLookup }
+            ],
             view: true,
             edit: {
                 title: "Update Employee",
@@ -152,7 +196,7 @@ sap.ui.define([
     /** Available assets to allocate + recent transfers */
     const allocation = function (ctx) {
         const available = EntityTable.create({
-            title: "Available Assets",
+            title: "All Available Assets",
             entitySet: "Assets",
             key: "asset_id",
             orderby: "asset_tag",
@@ -165,6 +209,7 @@ sap.ui.define([
                 { path: "location", label: "Location" }
             ],
             search: ["asset_tag", "name", "serial_number"],
+            actionsWidth: "8rem",
             rowActions: [{ text: "Assign", icon: "sap-icon://add-employee", type: "Emphasized", showText: true,
                 press: (row, c, t) => Actions.assign(ctx, () => { t.refresh(); transfers.refresh(); }, { asset_id: row.asset_id }) }]
         }, ctx);
@@ -238,12 +283,13 @@ sap.ui.define([
         title: "Manager Dashboard",
         service: SERVICE,
         sections: [
-            { key: "overview", text: "Manager Overview", icon: "sap-icon://home", subtitle: "Your team, its assets and open activities", build: overview },
-            { key: "employees", text: "Employee Records", icon: "sap-icon://group", subtitle: "Employees of your team and department", build: employees },
-            { key: "employeeAssets", text: "Employee Asset Details", icon: "sap-icon://laptop", subtitle: "Assets assigned to your team members", build: employeeAssets },
-            { key: "ownership", text: "Asset Ownership", icon: "sap-icon://customer-and-contacts", subtitle: "View, edit and transfer ownership; every change is recorded", build: shared.ownership },
-            { key: "allocation", text: "Asset Allocation", icon: "sap-icon://inventory", subtitle: "Assign available assets and track transfers", build: allocation },
-            { key: "maintenance", text: "Maintenance", icon: "sap-icon://wrench", subtitle: "Maintenance records, costs and service dates of the assets you manage", build: maintenance },
+            { key: "overview", text: "Manager Overview", icon: "sap-icon://home", subtitle: "Managers, employees, assets and open activities", build: overview },
+            { key: "managers", text: "Manager Records", icon: "sap-icon://manager", subtitle: "All managers and the employees assigned to them", build: managers },
+            { key: "employees", text: "Employee Records", icon: "sap-icon://group", subtitle: "All employee records", build: employees },
+            { key: "employeeAssets", text: "Employee Asset Details", icon: "sap-icon://laptop", subtitle: "Assets assigned to employees", build: employeeAssets },
+            { key: "allocation", text: "Asset Allocation", icon: "sap-icon://inventory", subtitle: "All available assets: allocate them to employees and track transfers", build: allocation },
+            { key: "ownership", text: "Ownership Ledger", icon: "sap-icon://customer-and-contacts", subtitle: "Ownership records and history: view, edit, transfer and return; every change is recorded", build: shared.ownership },
+            { key: "maintenance", text: "Maintenance Records", icon: "sap-icon://wrench", subtitle: "Add and edit maintenance records, update status, costs and service dates", build: maintenance },
             { key: "requests", text: "Asset Requests", icon: "sap-icon://inbox", subtitle: "Approve or reject the requests, returns and issue reports of the employees assigned to you", build: requests },
             { key: "reports", text: "Reports", icon: "sap-icon://business-objects-experience", subtitle: "Allocation, ownership, maintenance and utilization", build: (ctx) => Sections.reports(ctx, REPORTS) },
             { key: "notifications", text: "Notifications", icon: "sap-icon://bell", build: Sections.notifications },

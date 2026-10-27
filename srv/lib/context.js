@@ -40,44 +40,19 @@ const requireManager = async (req) => {
 };
 
 /**
- * Records a manager may work with:
- * - employees: members of the manager's department and employees reporting to the manager
- * - teamAssets: assets managed by the manager or held by a team member
- * - assignableAssets: available assets managed by the manager or not managed by anyone
+ * Managers see and maintain all employee, asset, ownership and maintenance records and may
+ * allocate any available asset to any employee. Asset requests are the exception:
+ * reportIds = employees whose assigned manager is this manager; only their requests
+ * (new assets, returns, issue reports) are sent to and decided by this manager.
  */
 const managerScope = async (manager) => {
     const key = cds.context;
     const cached = key && cache.get(key)?.scope;
     if (cached) return cached;
-    const { Employees, Assets } = db();
-    const employeeQuery = SELECT.from(Employees).columns('employee_id');
-    if (manager.department_dept_id) {
-        employeeQuery.where('department_dept_id =', manager.department_dept_id, 'or manager_manager_id =', manager.manager_id);
-    } else {
-        employeeQuery.where({ manager_manager_id: manager.manager_id });
-    }
-    const employeeIds = (await employeeQuery).map((e) => e.employee_id);
-    // employees whose assigned manager is this manager - their asset requests are sent to this manager
+    const { Employees } = db();
     const reportIds = (await SELECT.from(Employees).columns('employee_id').where({ manager_manager_id: manager.manager_id }))
         .map((e) => e.employee_id);
-
-    const managed = await SELECT.from(Assets).columns('asset_id').where({ manager_manager_id: manager.manager_id });
-    const held = employeeIds.length
-        ? await SELECT.from(Assets).columns('asset_id').where({ current_holder_employee_id: { in: employeeIds } })
-        : [];
-    const teamAssetIds = [...new Set([...managed, ...held].map((a) => a.asset_id))];
-
-    const assignable = await SELECT.from(Assets).columns('asset_id')
-        .where('status =', 'Available', 'and (manager_manager_id =', manager.manager_id, 'or manager_manager_id is null)');
-    const assignableAssetIds = assignable.map((a) => a.asset_id);
-
-    const scope = {
-        employeeIds,
-        reportIds,
-        teamAssetIds,
-        assignableAssetIds,
-        assetIds: [...new Set([...teamAssetIds, ...assignableAssetIds])]
-    };
+    const scope = { reportIds };
     if (key && cache.has(key)) cache.get(key).scope = scope;
     return scope;
 };

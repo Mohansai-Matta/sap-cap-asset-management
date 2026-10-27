@@ -42,6 +42,7 @@
                     </TileContent>
                 </GenericTile>
             </FlexBox>
+            <Text text="{i18n>releaseText}" class="sapUiTinyMarginBegin sapUiMediumMarginTop" />
         </Page>
     </App>
 </mvc:View>

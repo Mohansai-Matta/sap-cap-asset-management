@@ -2,14 +2,24 @@ using { asset.management as db } from '../db/schema';
 using { asset.management.api as api } from './types';
 
 /**
- * Manager dashboard: employees of the manager's department / team, their assets,
- * ownership, maintenance records and requests. Every record is scoped on the server.
+ * Manager dashboard: all manager and employee records, all assets (available assets can be
+ * allocated to any employee), the ownership ledger and the maintenance records.
+ * Asset requests are only shown to the employee's assigned manager.
  */
 @path    : '/odata/v4/manager'
 @requires: 'Manager'
 service ManagerService {
 
-    /** team members - managers may update contact data, designation and status */
+    /** all managers (read only) */
+    @readonly
+    @cds.redirection.target
+    entity Managers           as projection on db.Managers {
+        *,
+        department.name    as department_name : String(100),
+        employee.full_name as employee_name   : String(100)
+    } excluding { managed_assets, vendors, ownership_logs, maintenance_logs, archive_records, team };
+
+    /** all employees - managers may update contact data, designation and status */
     @restrict: [{ grant: ['READ', 'UPDATE'], to: 'Manager' }]
     entity Employees          as projection on db.Employees {
         *,
@@ -17,7 +27,7 @@ service ManagerService {
         manager.full_name as manager_name    : String(100)
     } excluding { asset, manager_profile, user };
 
-    /** team assets plus available assets that may be allocated */
+    /** all assets; available assets can be allocated to employees */
     @readonly
     entity Assets             as projection on db.Assets {
         *,
@@ -48,7 +58,7 @@ service ManagerService {
         recorded_by.full_name   as recorded_by_name : String(100)
     } excluding { recorded_by };
 
-    /** maintenance of team assets - create, edit and update status */
+    /** maintenance records of all assets - create, edit and update status */
     @restrict: [{ grant: ['READ', 'CREATE', 'UPDATE'], to: 'Manager' }]
     entity MaintenanceRecords as projection on db.MaintenanceRecords {
         *,
