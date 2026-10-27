@@ -634,8 +634,9 @@ sap.ui.define([
         const tables = settingsTables(ctx);
         ctx.setActiveTable(tables.departments);
         const hint = new Text({
-            text: "Access rights are granted in the SAP BTP cockpit by assigning the role collections AssetManagement_Admin, " +
-                "AssetManagement_Manager or AssetManagement_Employee. Here you link each login to its employee record and role."
+            text: "The role chosen here opens the matching dashboard (Admin, Manager or Employee). Role Manager makes the selected " +
+                "employee an active manager. Logins with the role collection AssetManagement_Manager or AssetManagement_Employee in the " +
+                "SAP BTP cockpit are linked automatically to the employee with the same e-mail address."
         }).addStyleClass("sapUiSmallMarginBottom");
         const tab = (key, text, icon, content) => new IconTabFilter({ key: key, text: text, icon: icon, content: content });
         return new VBox({

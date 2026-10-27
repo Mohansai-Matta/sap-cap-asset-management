@@ -10,6 +10,7 @@ const maintenance = require('./lib/maintenance');
 const stats = require('./lib/stats');
 const { markRead } = require('./lib/notify');
 const { audit, registerAudit } = require('./lib/audit');
+const { ensureManager } = require('./lib/context');
 
 module.exports = class AdminService extends cds.ApplicationService {
 
@@ -127,6 +128,19 @@ module.exports = class AdminService extends cds.ApplicationService {
             req.data.user_id = login;
             const existing = await SELECT.one.from(db().Users).columns('user_id').where('lower(user_id) =', login.toLowerCase());
             if (existing) req.reject(409, `The login '${existing.user_id}' already exists. Edit it in Settings & Permissions > Users.`);
+        });
+
+        // Role "Manager" in Settings & Permissions > Users: the linked employee becomes an active manager
+        this.before(['CREATE', 'UPDATE'], Users, async (req) => {
+            const before = req.event === 'UPDATE' ? await current('Users', 'user_id', req.data.user_id) : {};
+            const merged = { ...before, ...req.data };
+            if (merged.role_code === 'Manager' && !merged.employee_employee_id) {
+                req.reject(400, 'A manager needs an employee record: please select the Employee Record.');
+            }
+        });
+        this.after(['CREATE', 'UPDATE'], Users, async (_, req) => {
+            const user = await current('Users', 'user_id', req.data.user_id);
+            if (user?.role_code === 'Manager' && user.employee_employee_id) await ensureManager(user.employee_employee_id);
         });
 
         this.before(['CREATE', 'UPDATE'], Users, async (req) => {

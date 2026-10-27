@@ -1,22 +1,66 @@
 const cds = require('@sap/cds');
 const { db } = require('./common');
+const { audit } = require('./audit');
 
 const cache = new WeakMap();
 
 /**
+ * Makes the employee an active manager: creates the manager record from the employee data,
+ * or activates an existing one if activate is set. Returns the manager record.
+ */
+const ensureManager = async (employeeId, { activate = true } = {}) => {
+    const { Employees, Managers } = db();
+    const existing = await SELECT.one.from(Managers).where({ employee_employee_id: employeeId });
+    if (existing) {
+        if (activate && !existing.active) await UPDATE(Managers).set({ active: true }).where({ manager_id: existing.manager_id });
+        return activate ? { ...existing, active: true } : existing;
+    }
+    const employee = await SELECT.one.from(Employees).where({ employee_id: employeeId });
+    if (!employee) return null;
+    const manager = {
+        manager_id: cds.utils.uuid(),
+        full_name: employee.full_name,
+        email: employee.email,
+        phone: employee.phone,
+        active: true,
+        employee_employee_id: employee.employee_id,
+        department_dept_id: employee.department_dept_id
+    };
+    await INSERT.into(Managers).entries(manager);
+    await audit('CREATE', 'Managers', manager.manager_id, `Manager record created for ${employee.full_name} (Manager role)`);
+    return manager;
+};
+
+/**
  * Resolves the logged-in user to the application records:
  * Users entry, linked employee and (if any) manager record.
+ * - A login without Users entry is linked to the employee with the same e-mail address
+ *   if the login has an Asset Management role (BTP role collection).
+ * - A login with the Manager role whose employee has no manager record gets one.
  */
 const getContext = async () => {
     const key = cds.context;
     if (key && cache.has(key)) return cache.get(key);
     const { Users, Employees, Managers } = db();
-    const userId = cds.context.user.id;
+    const login = cds.context.user;
+    const userId = login.id;
     // logins are compared case-insensitively (identity providers may send Name@Company.com)
-    const user = await SELECT.one.from(Users).where('lower(user_id) =', String(userId).toLowerCase());
+    let user = await SELECT.one.from(Users).where('lower(user_id) =', String(userId).toLowerCase());
+    if (!user && (login.is('Manager') || login.is('Employee'))) {
+        const match = await SELECT.one.from(Employees).columns('employee_id', 'full_name', 'email')
+            .where('lower(email) =', String(userId).toLowerCase());
+        if (match) {
+            user = { user_id: userId, full_name: match.full_name, email: match.email, active: true,
+                role_code: login.is('Manager') ? 'Manager' : 'Employee', employee_employee_id: match.employee_id };
+            await INSERT.into(Users).entries(user);
+            await audit('CREATE', 'Users', userId, `Login linked to the employee ${match.full_name} (same e-mail address)`);
+        }
+    }
     const employeeId = user?.active ? user.employee_employee_id : null;
     const employee = employeeId ? await SELECT.one.from(Employees).where({ employee_id: employeeId }) : null;
-    const manager = employeeId ? await SELECT.one.from(Managers).where({ employee_employee_id: employeeId }) : null;
+    let manager = employeeId ? await SELECT.one.from(Managers).where({ employee_employee_id: employeeId }) : null;
+    // a deactivated manager stays deactivated; only a missing manager record is created
+    if (employee && !manager && login.is('Manager')) manager = await ensureManager(employee.employee_id, { activate: false });
     const ctx = { userId, user, employee, manager };
     if (key) cache.set(key, ctx);
     return ctx;
@@ -91,4 +135,4 @@ const me = async () => {
     };
 };
 
-module.exports = { getContext, requireEmployee, requireManager, managerScope, me };
+module.exports = { getContext, requireEmployee, requireManager, managerScope, me, ensureManager };

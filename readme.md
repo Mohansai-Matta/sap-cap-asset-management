@@ -22,7 +22,7 @@ Every dashboard has a sidebar, a header with module search, a notifications popo
 
 ### Server-side authorization
 
-- Each dashboard uses its own OData service: `/odata/v4/admin`, `/odata/v4/manager` and `/odata/v4/employee`. Each service requires the matching XSUAA role.
+- Each dashboard uses its own OData service: `/odata/v4/admin`, `/odata/v4/manager` and `/odata/v4/employee`. Each service requires the matching role: from the XSUAA role collection or from the role set in *Settings & Permissions → Users* (`srv/server.js`).
 - **Managers** see all manager, employee, asset, ownership and maintenance records, can allocate any available asset to any employee, and maintain the ownership ledger and the maintenance records. Asset requests, returns and issue reports go to the employee's **assigned manager**, and only that manager sees and decides them. A manager cannot decide on their own requests.
 - **Employees** only see their own profile, assets, ownership, maintenance and requests. They cannot change ownership records directly; they raise requests instead.
 - Every change is written to the **audit log**, and the people involved get **notifications** (new request, decision, assignment, transfer, maintenance, overdue return).
@@ -65,8 +65,8 @@ Alternatively, right-click `mta.yaml` → **Build MTA Project**, then right-clic
 
 After deployment:
 
-1. **Assign role collections** in the BTP cockpit (Security → Role Collections): `AssetManagement_Admin`, `AssetManagement_Manager` or `AssetManagement_Employee`.
-2. **Register users.** The sample data contains `admin@company.com`, `vijay.kumar@company.com` and others. Log in with an Admin user and, in *Admin Dashboard → Settings & Permissions → Users*, create one entry per login: user ID = the e-mail address you log in with, plus role and employee record. Admins don't need a `Users` entry, only the role collection. Managers and employees need one so that their dashboard knows which employee record belongs to them.
+1. **Assign the role collection `AssetManagement_Admin`** to the first administrator in the BTP cockpit (Security → Users).
+2. **Give everyone else their role in the app.** In *Admin Dashboard → Settings & Permissions → Users*, create one entry per login: user ID = the e-mail address the person logs in with, role (Admin, Manager or Employee) and employee record. The role chosen there opens the matching dashboard; no role collection is needed for that person. Role **Manager** makes the selected employee an active manager automatically. Alternatively, assign the role collection `AssetManagement_Manager` or `AssetManagement_Employee` in the BTP cockpit: a login with one of these is linked automatically to the employee with the same e-mail address (and gets a manager record with `AssetManagement_Manager`).
 3. Open the URL of the `asset-management` app (the approuter). The home page welcomes you and shows the three dashboards; each dashboard checks your role collections when you open it. Direct URLs:
    - `/assetmanagementdashboard/index.html#/admin/overview`
    - `/assetmanagementdashboard/index.html#/manager/overview`
