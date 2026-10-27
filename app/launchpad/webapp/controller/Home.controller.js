@@ -1,6 +1,6 @@
 sap.ui.define(
-    ["sap/ui/core/mvc/Controller", "sap/ui/model/json/JSONModel", "sap/m/library"],
-    function (Controller, JSONModel, mobileLibrary) {
+    ["sap/ui/core/mvc/Controller", "sap/ui/model/json/JSONModel", "sap/m/library", "sap/m/MessageBox"],
+    function (Controller, JSONModel, mobileLibrary, MessageBox) {
         "use strict";
 
         // Deployed (HTML5 Application Repository): /assetmanagement<app>/index.html
@@ -43,14 +43,29 @@ sap.ui.define(
                     .catch((error) => model.setData({ loaded: true, message: error.message }));
             },
 
+            /** Opens a dashboard, or explains which role collection is missing */
+            onOpenDashboard: async function (oEvent) {
+                const role = oEvent.getSource().data("role");
+                const user = this.getView().getModel("user").getData();
+                if (user["is_" + role]) {
+                    this._open("dashboard", "#/" + role + "/overview");
+                    return;
+                }
+                // the i18n bundle is loaded asynchronously
+                const bundle = await Promise.resolve(this.getOwnerComponent().getModel("i18n").getResourceBundle());
+                const roleCollection = "AssetManagement_" + role.charAt(0).toUpperCase() + role.slice(1);
+                MessageBox.information(bundle.getText(role === "admin" ? "noAccessAdmin" : "noAccessLinked", [roleCollection]));
+            },
+
             onSignOut: function () {
                 window.location.href = "/do/logout";
             },
 
             onOpenApp: function (oEvent) {
-                const source = oEvent.getSource();
-                const sApp = source.data("target");
-                const sHash = source.data("hash") || "";
+                this._open(oEvent.getSource().data("target"), "");
+            },
+
+            _open: function (sApp, sHash) {
                 const bDeployed = window.location.pathname.startsWith(DEPLOYED_PREFIX);
                 const sUrl = (bDeployed ? DEPLOYED_PREFIX + sApp : "/" + sApp) + "/index.html" + sHash;
                 mobileLibrary.URLHelper.redirect(sUrl, false);

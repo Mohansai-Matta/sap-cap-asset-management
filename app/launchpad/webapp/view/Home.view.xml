@@ -11,30 +11,42 @@
                 <Text text="{user>/full_name}" />
                 <Button text="{i18n>signOut}" icon="sap-icon://log" type="Transparent" press=".onSignOut" visible="{view>/deployed}" />
             </headerContent>
+
+            <!-- welcome -->
+            <VBox class="sapUiTinyMarginBegin sapUiSmallMarginTop sapUiMediumMarginBottom">
+                <Title text="{= ${user>/full_name} ? 'Welcome, ' + ${user>/full_name} : 'Welcome' }" level="H1" titleStyle="H2" />
+                <Text text="{i18n>welcomeText}" class="sapUiTinyMarginTop" />
+            </VBox>
+
             <MessageStrip text="{user>/message}" type="Warning" showIcon="true" visible="{= !!${user>/message} }" class="sapUiSmallMarginBottom" />
 
-            <Title text="{i18n>dashboardsGroup}" level="H2" class="sapUiTinyMarginBegin sapUiSmallMarginTop" visible="{= !!(${user>/is_admin} || ${user>/is_manager} || ${user>/is_employee}) }" />
+            <!-- the three dashboards (always shown; the ones without access are marked) -->
+            <Title text="{i18n>dashboardsGroup}" level="H2" class="sapUiTinyMarginBegin" />
             <FlexBox wrap="Wrap" alignItems="Start">
-                <GenericTile class="sapUiTinyMarginBegin sapUiTinyMarginTop" header="{i18n>adminDashboardTitle}" subheader="{i18n>adminDashboardSubtitle}"
-                    press=".onOpenApp" app:target="dashboard" app:hash="#/admin/overview" visible="{= !!${user>/is_admin} }">
-                    <TileContent>
+                <GenericTile class="sapUiTinyMarginBegin sapUiTinyMarginTop" frameType="TwoByOne"
+                    header="{i18n>adminDashboardTitle}" subheader="{i18n>adminDashboardSubtitle}"
+                    press=".onOpenDashboard" app:role="admin">
+                    <TileContent footer="{= ${user>/is_admin} ? ${i18n>openDashboard} : ${i18n>noAccess} }">
                         <ImageContent src="sap-icon://shield" />
                     </TileContent>
                 </GenericTile>
-                <GenericTile class="sapUiTinyMarginBegin sapUiTinyMarginTop" header="{i18n>managerDashboardTitle}" subheader="{i18n>managerDashboardSubtitle}"
-                    press=".onOpenApp" app:target="dashboard" app:hash="#/manager/overview" visible="{= !!${user>/is_manager} }">
-                    <TileContent>
+                <GenericTile class="sapUiTinyMarginBegin sapUiTinyMarginTop" frameType="TwoByOne"
+                    header="{i18n>managerDashboardTitle}" subheader="{i18n>managerDashboardSubtitle}"
+                    press=".onOpenDashboard" app:role="manager">
+                    <TileContent footer="{= ${user>/is_manager} ? ${i18n>openDashboard} : ${i18n>noAccess} }">
                         <ImageContent src="sap-icon://manager" />
                     </TileContent>
                 </GenericTile>
-                <GenericTile class="sapUiTinyMarginBegin sapUiTinyMarginTop" header="{i18n>employeeDashboardTitle}" subheader="{i18n>employeeDashboardSubtitle}"
-                    press=".onOpenApp" app:target="dashboard" app:hash="#/employee/overview" visible="{= !!${user>/is_employee} }">
-                    <TileContent>
+                <GenericTile class="sapUiTinyMarginBegin sapUiTinyMarginTop" frameType="TwoByOne"
+                    header="{i18n>employeeDashboardTitle}" subheader="{i18n>employeeDashboardSubtitle}"
+                    press=".onOpenDashboard" app:role="employee">
+                    <TileContent footer="{= ${user>/is_employee} ? ${i18n>openDashboard} : ${i18n>noAccess} }">
                         <ImageContent src="sap-icon://employee" />
                     </TileContent>
                 </GenericTile>
             </FlexBox>
 
+            <!-- SAP Fiori elements master data apps (administrators) -->
             <Title text="{i18n>fioriAppsGroup}" level="H2" class="sapUiTinyMarginBegin sapUiMediumMarginTop" visible="{= !!${user>/is_admin} }" />
             <FlexBox wrap="Wrap" alignItems="Start" visible="{= !!${user>/is_admin} }">
                 <GenericTile class="sapUiTinyMarginBegin sapUiTinyMarginTop" header="{i18n>assetsTitle}" subheader="{i18n>assetsSubtitle}" press=".onOpenApp" app:target="assets">
