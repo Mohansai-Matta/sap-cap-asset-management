@@ -4,7 +4,14 @@
     {
       "type": "shell",
       "label": "cds watch",
-      "command": "cds watch"
+      "command": "cds watch",
+      "problemMatcher": []
+    },
+    {
+      "type": "shell",
+      "label": "cds watch (hybrid - SAP HANA)",
+      "command": "cds watch --profile hybrid",
+      "problemMatcher": []
     }
   ]
 }

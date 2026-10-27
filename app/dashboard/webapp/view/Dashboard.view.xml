@@ -1,0 +1,71 @@
+<mvc:View
+    controllerName="assetmanagement.dashboard.controller.Dashboard"
+    xmlns:mvc="sap.ui.core.mvc"
+    xmlns="sap.m"
+    xmlns:tnt="sap.tnt"
+    height="100%">
+    <tnt:ToolPage id="toolPage" sideExpanded="{view>/sideExpanded}">
+        <tnt:header>
+            <tnt:ToolHeader id="toolHeader">
+                <Button id="menuButton" icon="sap-icon://menu2" type="Transparent" press=".onToggleSide" tooltip="{i18n>toggleMenu}">
+                    <layoutData>
+                        <OverflowToolbarLayoutData priority="NeverOverflow" />
+                    </layoutData>
+                </Button>
+                <Button id="homeButton" icon="sap-icon://home" type="Transparent" press=".onGoHome" tooltip="{i18n>home}">
+                    <layoutData>
+                        <OverflowToolbarLayoutData priority="NeverOverflow" />
+                    </layoutData>
+                </Button>
+                <Title id="appTitle" text="{view>/title}" level="H1" wrapping="false">
+                    <layoutData>
+                        <OverflowToolbarLayoutData priority="Disappear" />
+                    </layoutData>
+                </Title>
+                <ToolbarSpacer />
+                <SearchField id="globalSearch" width="18rem" placeholder="{i18n>searchPlaceholder}"
+                    search=".onGlobalSearch" enabled="{view>/searchEnabled}">
+                    <layoutData>
+                        <OverflowToolbarLayoutData priority="Low" />
+                    </layoutData>
+                </SearchField>
+                <Button id="notificationButton" icon="sap-icon://bell" type="Transparent"
+                    press=".onOpenNotifications" tooltip="{i18n>notifications}">
+                    <customData>
+                        <BadgeCustomData key="badge" value="{view>/unreadText}" visible="{= ${view>/unread} > 0 }" />
+                    </customData>
+                    <layoutData>
+                        <OverflowToolbarLayoutData priority="NeverOverflow" />
+                    </layoutData>
+                </Button>
+                <Avatar id="profileAvatar" initials="{view>/initials}" displaySize="XS" press=".onOpenProfileMenu"
+                    tooltip="{user>/full_name}" backgroundColor="Accent6">
+                    <layoutData>
+                        <OverflowToolbarLayoutData priority="NeverOverflow" />
+                    </layoutData>
+                </Avatar>
+            </tnt:ToolHeader>
+        </tnt:header>
+        <tnt:sideContent>
+            <tnt:SideNavigation id="sideNav" selectedKey="{view>/section}" itemSelect=".onNavSelect">
+                <tnt:NavigationList id="navList" items="{path: 'view>/nav', templateShareable: false}">
+                    <tnt:NavigationListItem text="{view>text}" icon="{view>icon}" key="{view>key}" />
+                </tnt:NavigationList>
+                <tnt:fixedItem>
+                    <tnt:NavigationList id="switchList" items="{path: 'view>/switches', templateShareable: false}">
+                        <tnt:NavigationListItem text="{view>text}" icon="{view>icon}" key="{view>key}" />
+                    </tnt:NavigationList>
+                </tnt:fixedItem>
+            </tnt:SideNavigation>
+        </tnt:sideContent>
+        <tnt:mainContents>
+            <Page id="sectionPage" showHeader="false" enableScrolling="true" backgroundDesign="List">
+                <VBox id="sectionHeader" class="sapUiSmallMarginBegin sapUiSmallMarginTop sapUiSmallMarginEnd">
+                    <Title id="sectionTitle" text="{view>/sectionTitle}" level="H2" titleStyle="H3" />
+                    <Text id="sectionSubtitle" text="{view>/sectionSubtitle}" class="sapUiTinyMarginTop" />
+                </VBox>
+                <VBox id="sectionContent" class="amSection" width="100%" />
+            </Page>
+        </tnt:mainContents>
+    </tnt:ToolPage>
+</mvc:View>

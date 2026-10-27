@@ -1,0 +1,67 @@
+{
+  "scopes": [
+    {
+      "name": "$XSAPPNAME.Admin",
+      "description": "Administrate the whole Asset Management application"
+    },
+    {
+      "name": "$XSAPPNAME.Manager",
+      "description": "Manage team employees, assets, ownership, maintenance and requests"
+    },
+    {
+      "name": "$XSAPPNAME.Employee",
+      "description": "View own assets and raise asset requests, returns and issue reports"
+    }
+  ],
+  "attributes": [],
+  "role-templates": [
+    {
+      "name": "Admin",
+      "description": "Asset Management Administrator",
+      "scope-references": [
+        "$XSAPPNAME.Admin"
+      ],
+      "attribute-references": []
+    },
+    {
+      "name": "Manager",
+      "description": "Asset Management Manager",
+      "scope-references": [
+        "$XSAPPNAME.Manager",
+        "$XSAPPNAME.Employee"
+      ],
+      "attribute-references": []
+    },
+    {
+      "name": "Employee",
+      "description": "Asset Management Employee",
+      "scope-references": [
+        "$XSAPPNAME.Employee"
+      ],
+      "attribute-references": []
+    }
+  ],
+  "role-collections": [
+    {
+      "name": "AssetManagement_Admin",
+      "description": "Asset Management - administrator (Admin dashboard and Fiori apps)",
+      "role-template-references": [
+        "$XSAPPNAME.Admin"
+      ]
+    },
+    {
+      "name": "AssetManagement_Manager",
+      "description": "Asset Management - manager (Manager and Employee dashboards)",
+      "role-template-references": [
+        "$XSAPPNAME.Manager"
+      ]
+    },
+    {
+      "name": "AssetManagement_Employee",
+      "description": "Asset Management - employee (Employee dashboard)",
+      "role-template-references": [
+        "$XSAPPNAME.Employee"
+      ]
+    }
+  ]
+}

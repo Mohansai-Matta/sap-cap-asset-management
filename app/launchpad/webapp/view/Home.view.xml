@@ -1,0 +1,48 @@
+<mvc:View
+    controllerName="assetmanagement.launchpad.controller.Home"
+    xmlns:mvc="sap.ui.core.mvc"
+    xmlns="sap.m"
+    xmlns:app="http://schemas.sap.com/sapui5/extension/sap.ui.core.CustomData/1"
+    displayBlock="true"
+    height="100%">
+    <App id="app">
+        <Page title="{i18n>appTitle}" class="sapUiContentPadding">
+            <headerContent>
+                <Button text="{i18n>signOut}" icon="sap-icon://log" type="Transparent" press=".onSignOut" visible="{view>/deployed}" />
+            </headerContent>
+
+            <!-- welcome -->
+            <VBox class="sapUiTinyMarginBegin sapUiSmallMarginTop sapUiMediumMarginBottom">
+                <Title text="{i18n>welcomeTitle}" level="H1" titleStyle="H2" />
+                <Text text="{i18n>welcomeText}" class="sapUiTinyMarginTop" />
+            </VBox>
+
+            <!-- the three dashboards; each dashboard checks the user's roles itself -->
+            <Title text="{i18n>dashboardsGroup}" level="H2" class="sapUiTinyMarginBegin" />
+            <FlexBox wrap="Wrap" alignItems="Start">
+                <GenericTile class="sapUiTinyMarginBegin sapUiTinyMarginTop" frameType="TwoByOne"
+                    header="{i18n>adminDashboardTitle}" subheader="{i18n>adminDashboardSubtitle}"
+                    press=".onOpenDashboard" app:role="admin">
+                    <TileContent>
+                        <ImageContent src="sap-icon://shield" />
+                    </TileContent>
+                </GenericTile>
+                <GenericTile class="sapUiTinyMarginBegin sapUiTinyMarginTop" frameType="TwoByOne"
+                    header="{i18n>managerDashboardTitle}" subheader="{i18n>managerDashboardSubtitle}"
+                    press=".onOpenDashboard" app:role="manager">
+                    <TileContent>
+                        <ImageContent src="sap-icon://manager" />
+                    </TileContent>
+                </GenericTile>
+                <GenericTile class="sapUiTinyMarginBegin sapUiTinyMarginTop" frameType="TwoByOne"
+                    header="{i18n>employeeDashboardTitle}" subheader="{i18n>employeeDashboardSubtitle}"
+                    press=".onOpenDashboard" app:role="employee">
+                    <TileContent>
+                        <ImageContent src="sap-icon://employee" />
+                    </TileContent>
+                </GenericTile>
+            </FlexBox>
+            <Text text="{i18n>releaseText}" class="sapUiTinyMarginBegin sapUiMediumMarginTop" />
+        </Page>
+    </App>
+</mvc:View>

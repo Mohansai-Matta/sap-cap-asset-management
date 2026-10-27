@@ -1,0 +1,4 @@
+code;name;description
+Admin;Administrator;Full access to all modules: users, managers, employees, assets, ownership, maintenance, requests, reports, audit logs and settings
+Manager;Manager;Manages employees of the own team/department, their assets, ownership, maintenance records and asset requests
+Employee;Employee;Views own profile, assets, ownership and maintenance, requests and returns assets and reports issues

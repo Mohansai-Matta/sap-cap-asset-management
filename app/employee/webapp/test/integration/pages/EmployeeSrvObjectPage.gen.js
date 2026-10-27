@@ -25,7 +25,7 @@ sap.ui.define(['sap/fe/test/ObjectPage'], function(ObjectPage) {
 
     return new ObjectPage(
         {
-            appId: 'employee',
+            appId: 'assetmanagement.employee',
             componentId: 'EmployeeSrvObjectPage',
             contextPath: '/EmployeeSrv'
         },

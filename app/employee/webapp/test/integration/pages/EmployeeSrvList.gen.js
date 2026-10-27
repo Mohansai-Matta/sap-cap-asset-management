@@ -25,7 +25,7 @@ sap.ui.define(['sap/fe/test/ListReport'], function(ListReport) {
 
     return new ListReport(
         {
-            appId: 'employee',
+            appId: 'assetmanagement.employee',
             componentId: 'EmployeeSrvList',
             contextPath: '/EmployeeSrv'
         },

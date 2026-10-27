@@ -1,24 +1,42 @@
 {
-  "name": "miniproject",
+  "name": "asset-management",
   "version": "1.0.0",
-  "description": "Welcome to your new CAP project.",
+  "description": "Asset Management - SAP CAP on SAP HANA Cloud with SAPUI5 / SAP Fiori dashboards for admins, managers and employees",
   "license": "ISC",
-  "author": "",
-  "type": "commonjs",
-  "main": "index.js",
+  "private": true,
+  "engines": {
+    "node": ">=20"
+  },
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "cds-serve",
+    "watch": "cds watch",
+    "watch:hybrid": "cds watch --profile hybrid",
+    "watch:btp": "node scripts/watch-btp.js",
+    "bind:xsuaa": "cds bind -2 asset-management-auth --for xsuaa-local",
+    "watch:xsuaa": "cds watch --profile xsuaa-local",
+    "approuter:install": "npm install --prefix .deploy/app-router",
+    "approuter:local": "cds bind --exec --profile xsuaa-local -- node .deploy/app-router/local.js",
+    "deploy:db": "cds deploy --to hana",
+    "watch-dashboard": "cds watch --open dashboard/index.html?sap-ui-xx-viewCache=false --livereload false",
+    "watch-assets": "cds watch --open assets/index.html?sap-ui-xx-viewCache=false --livereload false",
     "watch-employee": "cds watch --open employee/index.html?sap-ui-xx-viewCache=false --livereload false",
     "watch-department": "cds watch --open department/index.html?sap-ui-xx-viewCache=false --livereload false",
-    "watch-manager": "cds watch --open manager/index.html?sap-ui-xx-viewCache=false --livereload false"
+    "watch-manager": "cds watch --open manager/index.html?sap-ui-xx-viewCache=false --livereload false",
+    "build": "cds build --production",
+    "build:mta": "mbt build -t mta_archives --mtar asset-management.mtar",
+    "deploy": "cf deploy mta_archives/asset-management.mtar --retries 1",
+    "undeploy": "cf undeploy asset-management --delete-services --delete-service-keys --delete-service-brokers"
   },
   "dependencies": {
     "@cap-js/hana": "^3.1.2",
-    "@sap/cds": "^10.2.1"
+    "@sap/cds": "^10.2.1",
+    "@sap/cds-common-content": "^3.2.0",
+    "@sap/xssec": "^4"
   },
   "devDependencies": {
     "@sap/cds-dk": "^10.2.0",
-    "cds-plugin-ui5": "^0.17.0"
+    "cds-plugin-ui5": "^0.17.0",
+    "@cap-js/sqlite": "^3"
   },
   "workspaces": [
     "app/*"
@@ -26,6 +44,111 @@
   "sapux": [
     "app/employee",
     "app/department",
-    "app/manager"
-  ]
+    "app/manager",
+    "app/assets"
+  ],
+  "cds": {
+    "requires": {
+      "db": {
+        "kind": "sql"
+      },
+      "auth": {
+        "[development]": {
+          "kind": "mocked",
+          "users": {
+            "admin@company.com": {
+              "password": "admin",
+              "roles": [
+                "Admin"
+              ]
+            },
+            "vijay.kumar@company.com": {
+              "password": "vijay",
+              "roles": [
+                "Manager",
+                "Employee"
+              ]
+            },
+            "rahul.kumar@company.com": {
+              "password": "rahul",
+              "roles": [
+                "Manager",
+                "Employee"
+              ]
+            },
+            "priya.sharma@company.com": {
+              "password": "priya",
+              "roles": [
+                "Employee"
+              ]
+            },
+            "arjun.reddy@company.com": {
+              "password": "arjun",
+              "roles": [
+                "Employee"
+              ]
+            },
+            "meera.iyer@company.com": {
+              "password": "meera",
+              "roles": [
+                "Employee"
+              ]
+            },
+            "*": false
+          }
+        },
+        "[hybrid]": {
+          "kind": "mocked",
+          "users": {
+            "admin@company.com": {
+              "password": "admin",
+              "roles": [
+                "Admin"
+              ]
+            },
+            "vijay.kumar@company.com": {
+              "password": "vijay",
+              "roles": [
+                "Manager",
+                "Employee"
+              ]
+            },
+            "rahul.kumar@company.com": {
+              "password": "rahul",
+              "roles": [
+                "Manager",
+                "Employee"
+              ]
+            },
+            "priya.sharma@company.com": {
+              "password": "priya",
+              "roles": [
+                "Employee"
+              ]
+            },
+            "arjun.reddy@company.com": {
+              "password": "arjun",
+              "roles": [
+                "Employee"
+              ]
+            },
+            "meera.iyer@company.com": {
+              "password": "meera",
+              "roles": [
+                "Employee"
+              ]
+            },
+            "*": false
+          }
+        },
+        "[production]": {
+          "kind": "xsuaa"
+        },
+        "[xsuaa-local]": {
+          "kind": "xsuaa"
+        }
+      },
+      "html5-repo": true
+    }
+  }
 }

@@ -1,0 +1,212 @@
+_schema-version: 3.3.0
+ID: asset-management
+version: 1.0.0
+description: "Asset Management - SAP CAP on SAP HANA Cloud with SAP Fiori elements apps"
+parameters:
+  enable-parallel-deployments: true
+  deploy_mode: html5-repo
+build-parameters:
+  before-all:
+    - builder: custom
+      commands:
+        - npm ci
+        - npx cds build --production
+
+modules:
+  # ---------------------------------------------------------------------------
+  # CAP service (Node.js)
+  # ---------------------------------------------------------------------------
+  - name: asset-management-srv
+    type: nodejs
+    path: gen/srv
+    parameters:
+      instances: 1
+      memory: 512M
+      disk-quota: 1024M
+      buildpack: nodejs_buildpack
+    build-parameters:
+      builder: npm-ci
+    provides:
+      - name: srv-api # required by consumers of CAP services (e.g. approuter)
+        properties:
+          srv-url: ${default-url}
+    requires:
+      - name: asset-management-auth
+      - name: asset-management-db
+
+  # ---------------------------------------------------------------------------
+  # SAP HANA Cloud HDI deployer (tables, views, CSV data)
+  # ---------------------------------------------------------------------------
+  - name: asset-management-db-deployer
+    type: hdb
+    path: gen/db
+    parameters:
+      buildpack: nodejs_buildpack
+      # the deployer imports the tables and all CSV files (incl. currency texts) - 256M is not enough
+      memory: 1024M
+      disk-quota: 1024M
+    requires:
+      - name: asset-management-db
+
+  # ---------------------------------------------------------------------------
+  # Standalone application router (entry point, XSUAA login)
+  # ---------------------------------------------------------------------------
+  - name: asset-management
+    type: approuter.nodejs
+    path: .deploy/app-router
+    parameters:
+      keep-existing-routes: true
+      disk-quota: 256M
+      memory: 256M
+    requires:
+      - name: srv-api
+        group: destinations
+        properties:
+          name: srv-api # must be used in xs-app.json as well
+          url: ~{srv-url}
+          forwardAuthToken: true
+      - name: asset-management-auth
+      - name: asset-management-html5-runtime
+    provides:
+      - name: app-api
+        properties:
+          app-protocol: ${protocol}
+          app-uri: ${default-uri}
+
+  # ---------------------------------------------------------------------------
+  # Uploads the SAPUI5 / Fiori apps to the HTML5 Application Repository
+  # ---------------------------------------------------------------------------
+  - name: asset-management-app-deployer
+    type: com.sap.application.content
+    path: gen
+    build-parameters:
+      build-result: app/
+      requires:
+        - name: assetmanagementlaunchpad
+          artifacts:
+            - launchpad.zip
+          target-path: app/
+        - name: assetmanagementdashboard
+          artifacts:
+            - dashboard.zip
+          target-path: app/
+        - name: assetmanagementassets
+          artifacts:
+            - assets.zip
+          target-path: app/
+        - name: assetmanagementdepartment
+          artifacts:
+            - department.zip
+          target-path: app/
+        - name: assetmanagementemployee
+          artifacts:
+            - employee.zip
+          target-path: app/
+        - name: assetmanagementmanager
+          artifacts:
+            - manager.zip
+          target-path: app/
+    requires:
+      - name: asset-management-html5-repo-host
+        parameters:
+          content-target: true
+
+  # ---------------------------------------------------------------------------
+  # SAPUI5 apps: entry page, Admin/Manager/Employee dashboards, SAP Fiori elements apps
+  # ---------------------------------------------------------------------------
+  - name: assetmanagementlaunchpad
+    type: html5
+    path: app/launchpad
+    build-parameters:
+      build-result: dist
+      builder: custom
+      commands:
+        - npm run build
+      supported-platforms: []
+  - name: assetmanagementdashboard
+    type: html5
+    path: app/dashboard
+    build-parameters:
+      build-result: dist
+      builder: custom
+      commands:
+        - npm run build
+      supported-platforms: []
+  - name: assetmanagementassets
+    type: html5
+    path: app/assets
+    build-parameters:
+      build-result: dist
+      builder: custom
+      commands:
+        - npm run build
+      supported-platforms: []
+  - name: assetmanagementdepartment
+    type: html5
+    path: app/department
+    build-parameters:
+      build-result: dist
+      builder: custom
+      commands:
+        - npm run build
+      supported-platforms: []
+  - name: assetmanagementemployee
+    type: html5
+    path: app/employee
+    build-parameters:
+      build-result: dist
+      builder: custom
+      commands:
+        - npm run build
+      supported-platforms: []
+  - name: assetmanagementmanager
+    type: html5
+    path: app/manager
+    build-parameters:
+      build-result: dist
+      builder: custom
+      commands:
+        - npm run build
+      supported-platforms: []
+
+resources:
+  # XSUAA - authentication & authorization (roles from xs-security.json)
+  - name: asset-management-auth
+    type: org.cloudfoundry.managed-service
+    parameters:
+      service: xsuaa
+      service-plan: application
+      path: ./xs-security.json
+      config:
+        xsappname: asset-management-${org}-${space}
+        tenant-mode: dedicated
+        oauth2-configuration:
+          credential-types:
+            - "binding-secret"
+            - "x509"
+          redirect-uris:
+            - https://*~{app-api/app-uri}/**
+            # local approuter (npm run approuter:local) in SAP Business Application Studio / on localhost
+            - https://*.applicationstudio.cloud.sap/**
+            - http://localhost:5000/**
+    requires:
+      - name: app-api
+
+  # SAP HANA Cloud HDI container
+  - name: asset-management-db
+    type: com.sap.xs.hdi-container
+    parameters:
+      service: hana
+      service-plan: hdi-shared
+
+  # HTML5 Application Repository
+  - name: asset-management-html5-repo-host
+    type: org.cloudfoundry.managed-service
+    parameters:
+      service: html5-apps-repo
+      service-plan: app-host
+  - name: asset-management-html5-runtime
+    type: org.cloudfoundry.managed-service
+    parameters:
+      service: html5-apps-repo
+      service-plan: app-runtime

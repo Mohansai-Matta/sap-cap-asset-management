@@ -1,0 +1,126 @@
+{
+  "_version": "1.89.0",
+  "sap.app": {
+    "id": "assetmanagement.dashboard",
+    "type": "application",
+    "i18n": {
+      "bundleName": "assetmanagement.dashboard.i18n.i18n",
+      "supportedLocales": [""],
+      "fallbackLocale": ""
+    },
+    "applicationVersion": {
+      "version": "1.0.0"
+    },
+    "title": "{{appTitle}}",
+    "description": "{{appDescription}}",
+    "crossNavigation": {
+      "inbounds": {
+        "AssetDashboard-display": {
+          "semanticObject": "AssetDashboard",
+          "action": "display",
+          "title": "{{appTitle}}",
+          "subTitle": "{{appDescription}}",
+          "icon": "sap-icon://business-objects-experience",
+          "signature": {
+            "parameters": {},
+            "additionalParameters": "allowed"
+          }
+        }
+      }
+    }
+  },
+  "sap.ui": {
+    "technology": "UI5",
+    "icons": {
+      "icon": "sap-icon://business-objects-experience"
+    },
+    "deviceTypes": {
+      "desktop": true,
+      "tablet": true,
+      "phone": true
+    }
+  },
+  "sap.ui5": {
+    "flexEnabled": false,
+    "dependencies": {
+      "minUI5Version": "1.153.0",
+      "libs": {
+        "sap.m": {},
+        "sap.ui.core": {},
+        "sap.ui.layout": {},
+        "sap.tnt": {},
+        "sap.f": {},
+        "sap.viz": {
+          "lazy": true
+        },
+        "sap.ui.export": {
+          "lazy": true
+        }
+      }
+    },
+    "contentDensities": {
+      "compact": true,
+      "cozy": true
+    },
+    "models": {
+      "i18n": {
+        "type": "sap.ui.model.resource.ResourceModel",
+        "settings": {
+          "bundleName": "assetmanagement.dashboard.i18n.i18n",
+          "supportedLocales": [""],
+          "fallbackLocale": "",
+          "async": true
+        }
+      }
+    },
+    "resources": {
+      "css": [
+        {
+          "uri": "css/style.css"
+        }
+      ]
+    },
+    "rootView": {
+      "viewName": "assetmanagement.dashboard.view.App",
+      "type": "XML",
+      "id": "app"
+    },
+    "routing": {
+      "config": {
+        "routerClass": "sap.m.routing.Router",
+        "type": "View",
+        "viewType": "XML",
+        "path": "assetmanagement.dashboard.view",
+        "controlId": "app",
+        "controlAggregation": "pages",
+        "async": true
+      },
+      "routes": [
+        {
+          "pattern": "",
+          "name": "home",
+          "target": "home"
+        },
+        {
+          "pattern": "{role}/:section:",
+          "name": "dashboard",
+          "target": "dashboard"
+        }
+      ],
+      "targets": {
+        "home": {
+          "id": "home",
+          "name": "Home"
+        },
+        "dashboard": {
+          "id": "dashboard",
+          "name": "Dashboard"
+        }
+      }
+    }
+  },
+  "sap.cloud": {
+    "public": true,
+    "service": "assetmanagement"
+  }
+}
