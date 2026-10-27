@@ -90,7 +90,7 @@ sap.ui.define([
      * @param {sap.ui.model.Filter[]} [cfg.fixedFilters]
      * @param {string} [cfg.orderby]
      * @param {string[]} [cfg.select]        additional properties to load (used by actions)
-     * @param {object} [cfg.create]          {title, fields, prepare(values), after(values, created)}
+     * @param {object} [cfg.create]          {title, fields, before(values) (async, throw to stop), prepare(values), after(values, created)}
      * @param {object} [cfg.edit]            {title, fields}
      * @param {boolean|object} [cfg.remove]  delete action {confirm}
      * @param {boolean} [cfg.view]           view details action
@@ -327,6 +327,7 @@ sap.ui.define([
                 submitText: "Create",
                 validate: cfg.create.validate,
                 onSubmit: async function (values) {
+                    if (cfg.create.before) await cfg.create.before(values, ctx);
                     const payload = cfg.create.prepare ? cfg.create.prepare(values) : values;
                     const created = await api.post(collectionUrl(), payload);
                     if (cfg.create.after) await cfg.create.after(values, created, ctx);

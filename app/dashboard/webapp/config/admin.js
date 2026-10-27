@@ -238,15 +238,34 @@ sap.ui.define([
                 fields: employeeFields.concat([
                     { name: "login_id", label: "Login (user ID / e-mail)", placeholder: "creates the user account", maxLength: 255 }
                 ]),
+                // an existing login without employee record is linked; a login linked to another employee stops the creation
+                before: async (values) => {
+                    values.existingLogin = null;
+                    if (!values.login_id) return;
+                    const login = values.login_id.trim();
+                    const rows = await api.get(SERVICE + "/Users?$filter=tolower(user_id)%20eq%20" + encodeURIComponent("'" + login.toLowerCase().replace(/'/g, "''") + "'"));
+                    if (rows.length && rows[0].employee_employee_id) {
+                        throw new Error("The login " + rows[0].user_id + " is already linked to the employee " + (rows[0].employee_name || "") +
+                            ". Change it in Settings & Permissions > Users, or leave the login empty.");
+                    }
+                    values.existingLogin = rows[0] || null;
+                },
                 prepare: (v) => {
                     const payload = Object.assign({}, v);
                     delete payload.login_id;
+                    delete payload.existingLogin;
                     return payload;
                 },
                 after: async (values, created) => {
                     if (!values.login_id) return;
+                    if (values.existingLogin) {
+                        await api.patch(SERVICE + "/Users(" + encodeURIComponent(api.keyLiteral(values.existingLogin.user_id, "string")) + ")", {
+                            employee_employee_id: created.employee_id
+                        });
+                        return;
+                    }
                     await api.post(SERVICE + "/Users", {
-                        user_id: values.login_id,
+                        user_id: values.login_id.trim(),
                         full_name: values.full_name,
                         email: values.email,
                         role_code: "Employee",

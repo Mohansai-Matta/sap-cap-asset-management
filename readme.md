@@ -138,7 +138,7 @@ Prerequisites: deploy this version once (`mbt build` and `cf deploy`), so that X
 - Deployed app: run `mbt build` and `cf deploy mta_archives/asset-management_1.0.0.mtar` again, and check that the step *asset-management-db-deployer* finishes without errors. If it doesn't, look at `cf logs asset-management-db-deployer --recent`.
 - Local hybrid run in SAP Business Application Studio: `cds deploy --to hana` (uses the bound HDI container), then `npm run watch`.
 
-For any other error, the service log shows the details: `cf logs asset-management-srv --recent`.
+For any other error, the service log shows the details: `cf logs asset-management-srv --recent | grep '"level":"error"'`. In the Admin Dashboard, error dialogs show the database's message instead of "Internal Server Error".
 
 **`cf deploy` fails in `asset-management-db-deployer`**: run `cf logs asset-management-db-deployer --recent` and look for lines with `error`.
 - *"... is not part of the content / undeploy"*: an artifact from an earlier version must be removed. Add it to `db/undeploy.json`.

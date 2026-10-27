@@ -121,6 +121,14 @@ module.exports = class AdminService extends cds.ApplicationService {
                 .where({ employee_employee_id: req.data.employee_employee_id, role_code: 'Employee' });
         });
 
+        this.before('CREATE', Users, async (req) => {
+            const login = String(req.data.user_id || '').trim();
+            if (!login) req.reject(400, 'Please enter the login (user ID / e-mail)');
+            req.data.user_id = login;
+            const existing = await SELECT.one.from(db().Users).columns('user_id').where('lower(user_id) =', login.toLowerCase());
+            if (existing) req.reject(409, `The login '${existing.user_id}' already exists. Edit it in Settings & Permissions > Users.`);
+        });
+
         this.before(['CREATE', 'UPDATE'], Users, async (req) => {
             const employeeId = req.data.employee_employee_id;
             if (!employeeId) return;
@@ -182,7 +190,13 @@ module.exports = class AdminService extends cds.ApplicationService {
                 error.message = OUTDATED;
                 error.code = 503;
                 error.status = 503;
+            } else if (!(error.status < 500) && /unique constraint/i.test(error.message || '')) {
+                error.message = 'This record already exists: a value that must be unique (for example a login) is used twice.';
+                error.code = 409;
+                error.status = 409;
             }
+            // this service is for administrators only: show them the real reason instead of "Internal Server Error"
+            if (!(error.status < 500)) error.$sanitize = false;
         });
 
         return super.init();
