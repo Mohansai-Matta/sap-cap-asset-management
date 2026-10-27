@@ -191,6 +191,12 @@ sap.ui.define([
             viewModel.setProperty("/sideExpanded", !viewModel.getProperty("/sideExpanded"));
         },
 
+        /** Back to the home page (welcome page with the three dashboards) */
+        onGoHome: function () {
+            const deployed = window.location.pathname.indexOf("/assetmanagement") === 0;
+            window.location.href = deployed ? "/assetmanagementlaunchpad/index.html" : "/launchpad/index.html";
+        },
+
         onNavSelect: function (event) {
             const key = event.getParameter("item").getKey();
             const router = this.getOwnerComponent().getRouter();

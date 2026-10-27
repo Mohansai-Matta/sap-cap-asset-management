@@ -12,7 +12,11 @@
                         <OverflowToolbarLayoutData priority="NeverOverflow" />
                     </layoutData>
                 </Button>
-                <Image src="sap-icon://business-objects-experience" visible="false" />
+                <Button id="homeButton" icon="sap-icon://home" type="Transparent" press=".onGoHome" tooltip="{i18n>home}">
+                    <layoutData>
+                        <OverflowToolbarLayoutData priority="NeverOverflow" />
+                    </layoutData>
+                </Button>
                 <Title id="appTitle" text="{view>/title}" level="H1" wrapping="false">
                     <layoutData>
                         <OverflowToolbarLayoutData priority="Disappear" />

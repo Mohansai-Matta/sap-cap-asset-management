@@ -42,7 +42,7 @@ A `Users` entry links a login (the user ID from the identity provider, usually t
 | `srv/lib/` | Shared business logic: ownership, requests, maintenance, notifications, audit log, reports, user context and scoping |
 | `srv/cat-service.*`, `srv/labels.cds` | Service and labels of the SAP Fiori elements apps (admins only) |
 | `app/dashboard` | SAPUI5 app with the Admin, Manager and Employee dashboards (`#/admin`, `#/manager`, `#/employee`) |
-| `app/launchpad` | Entry page with tiles for the dashboards the user may open |
+| `app/launchpad` | Home page: welcome and the three dashboards (each dashboard checks the user's roles) |
 | `app/assets`, `app/employee`, `app/manager`, `app/department` | SAP Fiori elements master data apps |
 | `.deploy/app-router` | Standalone SAP application router |
 | `xs-security.json` | Scopes, role templates and role collections `AssetManagement_Admin`, `AssetManagement_Manager` and `AssetManagement_Employee` |
@@ -67,7 +67,7 @@ After deployment:
 
 1. **Assign role collections** in the BTP cockpit (Security → Role Collections): `AssetManagement_Admin`, `AssetManagement_Manager` or `AssetManagement_Employee`.
 2. **Register users.** The sample data contains `admin@company.com`, `vijay.kumar@company.com` and others. Log in with an Admin user and, in *Admin Dashboard → Settings & Permissions → Users*, create one entry per login: user ID = the e-mail address you log in with, plus role and employee record. Admins don't need a `Users` entry, only the role collection. Managers and employees need one so that their dashboard knows which employee record belongs to them.
-3. Open the URL of the `asset-management` app (the approuter). The entry page shows the dashboards you may open. Direct URLs:
+3. Open the URL of the `asset-management` app (the approuter). The home page welcomes you and shows the three dashboards; each dashboard checks your role collections when you open it. Direct URLs:
    - `/assetmanagementdashboard/index.html#/admin/overview`
    - `/assetmanagementdashboard/index.html#/manager/overview`
    - `/assetmanagementdashboard/index.html#/employee/overview`
