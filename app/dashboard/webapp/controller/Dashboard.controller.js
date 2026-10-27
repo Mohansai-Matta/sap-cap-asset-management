@@ -91,8 +91,15 @@ sap.ui.define([
             if (!user[PERMISSION[role]]) {
                 this._role = null;
                 viewModel.setProperty("/nav", []);
-                this._showMessage("sapIllus-UnableToLoad", this._text("noAccessTitle"), this._noAccessText(user, role, config));
                 this._buildSwitches(user, role);
+                // who is signed in with which roles, and buttons to the dashboards this user can open
+                const details = this._text("noAccessDetails", [user.user_id, user.roles ? user.roles.split(",").join(", ") : this._text("none")]);
+                const router = this.getOwnerComponent().getRouter();
+                const buttons = viewModel.getProperty("/switches").map((sw) => new Button({
+                    text: this._text("openDashboard", [sw.text]), icon: sw.icon, type: "Emphasized",
+                    press: () => router.navTo("dashboard", { role: sw.key.slice(7), section: "overview" })
+                }));
+                this._showMessage("sapIllus-UnableToLoad", this._text("noAccessTitle"), this._noAccessText(user, role, config) + " " + details, buttons);
                 return;
             }
 
@@ -197,11 +204,11 @@ sap.ui.define([
             return this._text("noDashboardAccess", [config.title]);
         },
 
-        _showMessage: function (type, title, text) {
+        _showMessage: function (type, title, text, buttons) {
             const content = this.byId("sectionContent");
             this.byId("sectionHeader").setVisible(false);
             content.destroyItems();
-            content.addItem(new IllustratedMessage({ illustrationType: type, title: title, description: text }));
+            content.addItem(new IllustratedMessage({ illustrationType: type, title: title, description: text, additionalContent: buttons || [] }));
         },
 
         /* =========================================================
