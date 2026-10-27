@@ -110,6 +110,8 @@ Open <http://localhost:4004/launchpad/index.html> or <http://localhost:4004/dash
 | `arjun.reddy@company.com` | `arjun` | Employee |
 | `meera.iyer@company.com` | `meera` | Employee |
 
+Each dashboard shows its modules only to users with the matching role: the Admin Dashboard for `admin@company.com`, the Manager Dashboard for `vijay.kumar@company.com` or `rahul.kumar@company.com`, the Employee Dashboard for any of the others (and the managers). Logged in as another user, the dashboard shows "No access" with an empty sidebar. The browser remembers the first login, so to switch users open a new private/incognito window.
+
 `srv/req.http` contains example requests for all services.
 
 ### Local run with the real SAP BTP login (no popup)

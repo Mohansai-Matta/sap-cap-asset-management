@@ -26,6 +26,12 @@ sap.ui.define([
 
     const CONFIGS = { admin: adminConfig, manager: managerConfig, employee: employeeConfig };
     const PERMISSION = { admin: "is_admin", manager: "is_manager", employee: "is_employee" };
+    // test users of the local run (cds watch, see package.json), shown when the logged-in user lacks the role
+    const TEST_USERS = {
+        admin: { user: "admin@company.com", password: "admin" },
+        manager: { user: "vijay.kumar@company.com", password: "vijay" },
+        employee: { user: "priya.sharma@company.com", password: "priya" }
+    };
     const POLL_MS = 60000;
 
     return Controller.extend("assetmanagement.dashboard.controller.Dashboard", {
@@ -85,9 +91,7 @@ sap.ui.define([
             if (!user[PERMISSION[role]]) {
                 this._role = null;
                 viewModel.setProperty("/nav", []);
-                this._showMessage("sapIllus-UnableToLoad", this._text("noAccessTitle"),
-                    !user.has_role ? this._text("noRoleText", [user.user_id, user.token_roles || "none"])
-                        : user.registered === false ? this._text("notRegisteredText", [user.user_id]) : this._text("noDashboardAccess", [config.title]));
+                this._showMessage("sapIllus-UnableToLoad", this._text("noAccessTitle"), this._noAccessText(user, role, config));
                 this._buildSwitches(user, role);
                 return;
             }
@@ -173,6 +177,24 @@ sap.ui.define([
                 content.destroyItems();
                 content.addItem(new IllustratedMessage({ illustrationType: "sapIllus-UnableToLoad", title: this._text("errorTitle"), description: error.message }));
             }
+        },
+
+        /** Explains why the dashboard cannot be opened and what to do (missing role or login not linked) */
+        _noAccessText: function (user, role, config) {
+            const deployed = window.location.pathname.indexOf("/assetmanagement") === 0;
+            const roleName = role.charAt(0).toUpperCase() + role.slice(1);
+            const hasRole = (user.roles || "").split(",").indexOf(roleName) >= 0;
+            if (!hasRole) {
+                if (!deployed) {
+                    const test = TEST_USERS[role];
+                    return this._text("noRoleLocal", [user.user_id, roleName, config.title, test.user, test.password]);
+                }
+                return user.has_role ? this._text("noRoleDeployed", [user.user_id, "AssetManagement_" + roleName])
+                    : this._text("noRoleText", [user.user_id, user.token_roles || "none"]);
+            }
+            if (role === "manager") return this._text("managerNotLinked", [user.user_id]);
+            if (role === "employee") return this._text("employeeNotLinked", [user.user_id]);
+            return this._text("noDashboardAccess", [config.title]);
         },
 
         _showMessage: function (type, title, text) {
