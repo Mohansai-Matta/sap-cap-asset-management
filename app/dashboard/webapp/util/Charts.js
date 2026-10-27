@@ -35,11 +35,10 @@ sap.ui.define([
          * @param {{title:string, subtitle?:string, value:number, icon?:string, color?:string, unit?:string, press?:function}} o
          */
         kpi: function (o) {
-            const tile = new GenericTile({
+            const tile = new GenericTile(Object.assign({
                 header: o.title,
                 subheader: o.subtitle || "",
                 frameType: "OneByOne",
-                press: o.press,
                 tileContent: [new TileContent({
                     unit: o.unit || "",
                     footer: o.footer || "",
@@ -51,7 +50,7 @@ sap.ui.define([
                         animateTextChange: false
                     })
                 })]
-            });
+            }, o.press ? { press: o.press } : {})); // an undefined press handler breaks the tile
             tile.addStyleClass("amKpiTile");
             return tile;
         },

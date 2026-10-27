@@ -98,7 +98,11 @@ sap.ui.define([
                 Charts.kpi({ title: "Available Assets", value: stats.availableAssets, icon: "sap-icon://inventory", color: "Good", press: go("assets") }),
                 Charts.kpi({ title: "Pending Requests", value: stats.pendingRequests, icon: "sap-icon://inbox", color: stats.pendingRequests ? "Critical" : "Neutral" }),
                 Charts.kpi({ title: "Maintenance Records", subtitle: stats.openMaintenance + " open", value: stats.maintenanceRecords, icon: "sap-icon://wrench" }),
-                Charts.kpi({ title: "Overdue Returns", value: stats.overdueReturns, icon: "sap-icon://lateness", color: stats.overdueReturns ? "Error" : "Neutral" })
+                Charts.kpi({ title: "Overdue Returns", value: stats.overdueReturns, icon: "sap-icon://lateness", color: stats.overdueReturns ? "Error" : "Neutral" }),
+                Charts.kpi({ title: "Assets in Repair", value: stats.inRepairAssets, icon: "sap-icon://wrench", color: stats.inRepairAssets ? "Critical" : "Neutral", press: go("assets") }),
+                Charts.kpi({ title: "Open Issues", value: stats.openIssues, icon: "sap-icon://warning", color: stats.openIssues ? "Critical" : "Neutral" }),
+                Charts.kpi({ title: "Maintenance Cost", value: Math.round(stats.maintenanceCost || 0), icon: "sap-icon://money-bills", press: go("reports") }),
+                Charts.kpi({ title: "Users", value: stats.totalUsers, icon: "sap-icon://account", press: go("settings") })
             ]),
             Sections.grid([
                 Charts.chart({ title: "Assets by Status", type: "donut", rows: byStatus }),
