@@ -143,3 +143,5 @@ For any other error, the service log shows the details: `cf logs asset-managemen
 **`cf deploy` fails in `asset-management-db-deployer`**: run `cf logs asset-management-db-deployer --recent` and look for lines with `error`.
 - *"... is not part of the content / undeploy"*: an artifact from an earlier version must be removed. Add it to `db/undeploy.json`.
 - *"unique constraint violated"* in a `.hdbtabledata` file: a sample-data row in `db/data` has the same key as a record created manually. Delete that record or remove the row from the CSV file.
+
+**"no target table or view available for FOR UPDATE clause"** when creating or changing records on SAP HANA: CAP checks `@assert.target` references with a locking query, and SAP HANA can't lock views with joins. `srv/server.js` runs these checks without the lock. Make sure the deployed version contains `srv/server.js`.
